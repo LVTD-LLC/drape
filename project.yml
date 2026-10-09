@@ -1,0 +1,52 @@
+name: Drape
+options:
+  bundleIdPrefix: dev.lvtd
+  deploymentTarget:
+    iOS: '18.0'
+  xcodeVersion: '26.5'
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    TARGETED_DEVICE_FAMILY: '1'
+    MARKETING_VERSION: '1.0.0'
+    CURRENT_PROJECT_VERSION: '1'
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    SWIFT_STRICT_CONCURRENCY: complete
+    CODE_SIGN_STYLE: Automatic
+targets:
+  Drape:
+    type: application
+    platform: iOS
+    sources: [Drape]
+    settings:
+      base:
+        TARGETED_DEVICE_FAMILY: '1'
+        PRODUCT_BUNDLE_IDENTIFIER: dev.lvtd.drape
+        INFOPLIST_FILE: Drape/Resources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+  DrapeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [DrapeTests]
+    dependencies:
+      - target: Drape
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+  DrapeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [DrapeUITests]
+    dependencies:
+      - target: Drape
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Drape:
+    build:
+      targets:
+        Drape: all
+    test:
+      targets: [DrapeTests, DrapeUITests]
