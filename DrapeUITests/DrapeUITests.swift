@@ -28,6 +28,24 @@ import XCTest
         XCTAssertTrue(app.staticTexts["Start with a favorite."].waitForExistence(timeout: 5))
     }
 
+    func testAIRequiresNoCustomerKeyOrUploadDialog() {
+        let app = XCUIApplication(); app.launchArguments = ["--uitesting", "--seed"]; app.launch()
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertFalse(app.secureTextFields["OpenRouter API key"].exists)
+        XCTAssertTrue(app.switches["Generate studio photos"].exists)
+        app.tabBars.buttons["Wardrobe"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Everyday linen shirt")).firstMatch.tap()
+        for _ in 0..<5 {
+            if app.buttons["Ask AI"].isHittable { break }
+            app.swipeUp()
+        }
+        app.buttons["Ask AI"].tap()
+        XCTAssertFalse(app.alerts["Send photos to OpenRouter?"].exists)
+        XCTAssertFalse(app.alerts["Something needs your attention"].exists)
+        // UI test launches have no gateway endpoint, so no paid requests are sent.
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Drape’s AI service is unavailable")).firstMatch.waitForExistence(timeout: 30))
+    }
+
     func testCreateLookFromWardrobe() {
         let app = XCUIApplication(); app.launchArguments = ["--uitesting", "--seed"]; app.launch()
         app.tabBars.buttons["Looks"].tap()

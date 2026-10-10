@@ -2,10 +2,12 @@ name: Drape
 options:
   bundleIdPrefix: dev.lvtd
   deploymentTarget:
-    iOS: '18.0'
+    iOS: '17.6'
   xcodeVersion: '26.5'
 settings:
   base:
+    DRAPE_AI_URL: ""
+    DRAPE_DEVELOPMENT_TOKEN: ""
     SWIFT_VERSION: '6.0'
     TARGETED_DEVICE_FAMILY: '1'
     MARKETING_VERSION: '1.0.0'
@@ -18,6 +20,8 @@ targets:
     type: application
     platform: iOS
     sources: [Drape]
+    configFiles:
+      Debug: config/Debug.xcconfig
     settings:
       base:
         TARGETED_DEVICE_FAMILY: '1'

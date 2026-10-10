@@ -12,15 +12,15 @@ The optional app lock uses Apple's device authentication. Drape does not receive
 
 ## Optional AI
 
-When you explicitly confirm an AI request, Drape sends the selected clothing photos to OpenRouter and the model provider you choose. Photos are used to suggest clothing details and, if you enable it, create a studio-style image. The providers' terms, retention, and privacy policies apply. See [OpenRouter's privacy policy](https://openrouter.ai/privacy) and the selected model provider's policy. Requests already sent to providers cannot be recalled by deleting local app data.
+When you tap Ask AI or Add and ask AI, Drape sends the selected clothing photos through its AI service to OpenRouter and its model providers. The adjacent disclosure explains each upload. The service forwards photos in memory without storing a wardrobe copy. Photos are used to suggest clothing details and, if you enable it, create a studio-style image. The providers' terms, retention, and privacy policies apply. See [OpenRouter's privacy policy](https://openrouter.ai/privacy) and the selected model provider's policy. Requests already sent to providers cannot be recalled by deleting local app data.
 
-Your OpenRouter API key is stored in the iPhone Keychain with access restricted to this device while unlocked. It is sent only to OpenRouter to authenticate requests. It is not included in wardrobe exports or the app source code. Drape does not send your name, Apple account identifier, or location with AI requests.
+Drape manages the OpenRouter credentials on its server. Users do not supply an API key. Private development builds use a separate development access credential; this is not the public-release authentication design. Drape does not send your name, Apple account identifier, or photo location metadata with AI requests. The gateway receives network information needed to serve the request, including the connecting IP address.
 
-The app remains usable without AI. You can disconnect OpenRouter in Settings. AI results may be inaccurate; compare generated images with originals and verify suggested size, fabric, and care against your clothing labels.
+The app remains usable without AI. AI results may be inaccurate; compare generated images with originals and verify suggested size, fabric, and care against your clothing labels.
 
 ## Export and deletion
 
-Exports include clothing photos, metadata, and saved looks. Export files are not encrypted by Drape; store them privately. Files saved to a cloud drive are subject to that provider's policies. You can restore a backup or delete all wardrobe data in Settings. Deletion also removes the saved OpenRouter key. Exported files and backups held elsewhere are not deleted automatically.
+Exports include clothing photos, metadata, and saved looks. Export files are not encrypted by Drape; store them privately. Files saved to a cloud drive are subject to that provider's policies. You can restore a backup or delete all wardrobe data in Settings. Deletion also removes any legacy customer key saved by earlier development builds. Exported files and backups held elsewhere are not deleted automatically.
 
 ## Analytics and advertising
 

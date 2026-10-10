@@ -16,11 +16,10 @@ struct AddItemView: View {
     @State private var category: Category = .other
     @State private var error: String?
     @State private var confirmDiscard = false
-    @State private var consent = false
     @AppStorage("aiEnabled") private var aiEnabled = false
     @AppStorage("studioEnabled") private var studioEnabled = false
-    @AppStorage("analysisModel") private var analysisModel = AIModelDefaults.analysis
-    @AppStorage("imageModel") private var imageModel = AIModelDefaults.image
+    private let analysisModel = AIModelDefaults.analysis
+    private let imageModel = AIModelDefaults.image
 
     var body: some View {
         NavigationStack {
@@ -64,11 +63,15 @@ struct AddItemView: View {
                     Label("Lay one item flat or hang it in good light. Keep the whole piece in frame.", systemImage: "sun.max")
                         .font(.footnote).foregroundStyle(.secondary)
                     if aiEnabled {
-                        Label("AI will suggest details\(studioEnabled ? " and a studio photo" : "") after saving. You choose what to keep.", systemImage: "sparkles").font(.footnote).foregroundStyle(.secondary)
+                        Label("Add and ask AI sends these photos to Drape’s AI providers for details\(studioEnabled ? " and a studio photo" : ""). Your originals are saved first. You choose what to keep.", systemImage: "sparkles").font(.footnote).foregroundStyle(.secondary)
                     }
-                    Button("Add to wardrobe") {
-                        if aiEnabled { consent = true } else { save(configuration: nil) }
+                    Button(aiEnabled ? "Add and ask AI" : "Add to wardrobe") {
+                        save(configuration: aiEnabled ? AIConfiguration(analysisModel: analysisModel, imageModel: imageModel, generateStudio: studioEnabled) : nil)
                     }.buttonStyle(PrimaryButton()).disabled(photos[.front] == nil || importing).accessibilityIdentifier("savePiece")
+                    if aiEnabled {
+                        Button("Add without AI") { save(configuration: nil) }
+                            .disabled(photos[.front] == nil || importing)
+                    }
                     #if DEBUG
                     if ProcessInfo.processInfo.arguments.contains("--uitesting") {
                         Button("Use test photo") { photos[.front] = DemoData.photo(color: .brown, symbol: "tshirt.fill") }.accessibilityIdentifier("testPhoto")
@@ -83,19 +86,6 @@ struct AddItemView: View {
             .interactiveDismissDisabled(!photos.isEmpty)
             .confirmationDialog("Discard this new piece?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("Discard photos", role: .destructive) { dismiss() }
-            }
-            .alert("Send photos to OpenRouter?", isPresented: $consent) {
-                Button("Send and add") {
-                    do {
-                        let key = try Keychain.read()
-                        guard !key.isEmpty else { throw AIError.missingKey }
-                        save(configuration: AIConfiguration(key: key, analysisModel: analysisModel, imageModel: imageModel, generateStudio: studioEnabled))
-                    } catch { self.error = error.localizedDescription }
-                }
-                Button("Add without AI") { save(configuration: nil) }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("These photos will be sent to OpenRouter and the selected model providers for analysis\(studioEnabled ? " and image generation" : ""). Their data policies apply. Requests use your OpenRouter credits. Your originals stay on this iPhone.")
             }
             .sheet(isPresented: $camera) { CameraView { data in
                 camera = false

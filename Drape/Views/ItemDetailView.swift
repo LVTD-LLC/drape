@@ -6,13 +6,12 @@ struct ItemDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(ProcessingCoordinator.self) private var processor
-    @AppStorage("analysisModel") private var analysisModel = AIModelDefaults.analysis
-    @AppStorage("imageModel") private var imageModel = AIModelDefaults.image
+    private let analysisModel = AIModelDefaults.analysis
+    private let imageModel = AIModelDefaults.image
     @AppStorage("studioEnabled") private var studioEnabled = false
     @State private var editing = false
     @State private var reviewing = false
     @State private var deleting = false
-    @State private var consent = false
     @State private var error: String?
     @State private var selectedPhoto = "Catalogue"
     private var busy: Bool { processor.activeIDs.contains(item.id) }
@@ -88,9 +87,9 @@ struct ItemDetailView: View {
                 HStack {
                     Button { processor.start(item, context: context) } label: { Label("Prepare photo", systemImage: "photo.badge.checkmark") }
                         .buttonStyle(.bordered)
-                    Button { consent = true } label: { Label("Ask AI", systemImage: "sparkles") }.buttonStyle(.borderedProminent)
+                    Button { askAI() } label: { Label("Ask AI", systemImage: "sparkles") }.buttonStyle(.borderedProminent)
                 }.disabled(busy)
-                Text("Prepare photo removes the background on your iPhone when supported. Ask AI suggests details and can create a studio photo using OpenRouter.")
+                Text("Prepare photo removes the background on your iPhone when supported. Tapping Ask AI sends this piece’s photos to Drape’s AI providers to suggest details\(studioEnabled ? " and create a studio photo" : ""). Your originals and saved details stay unchanged until you choose what to keep.")
                     .font(.caption).foregroundStyle(.secondary)
                 if let model = item.analysisModel { Text("Details suggested by \(model)").font(.caption2).foregroundStyle(.tertiary) }
             }.padding(22)
@@ -123,12 +122,6 @@ struct ItemDetailView: View {
         .confirmationDialog("Delete this piece and its photos?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete piece", role: .destructive) { delete() }
         } message: { Text("It will also be removed from your looks. This cannot be undone.") }
-        .alert("Send photos to OpenRouter?", isPresented: $consent) {
-            Button("Send photos") { askAI() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("The front, back and label photos will be sent to OpenRouter and your selected model providers. Their data policies apply. This uses your OpenRouter credits.\(studioEnabled ? " A studio photo will also be generated." : "") Your current details won’t change until you accept the suggestions.")
-        }
         .errorNotice($error)
     }
     @ViewBuilder private func detail(_ title: String, _ value: String) -> some View {
@@ -140,12 +133,9 @@ struct ItemDetailView: View {
         }
     }
     private func askAI() {
-        do {
-            let key = try Keychain.read()
-            guard !key.isEmpty else { throw AIError.missingKey }
-            processor.start(item, context: context, configuration: AIConfiguration(key: key, analysisModel: analysisModel, imageModel: imageModel, generateStudio: studioEnabled))
-        } catch { self.error = error.localizedDescription }
+        processor.start(item, context: context, configuration: AIConfiguration(analysisModel: analysisModel, imageModel: imageModel, generateStudio: studioEnabled))
     }
+
     private func delete() {
         processor.cancel(item.id)
         do {

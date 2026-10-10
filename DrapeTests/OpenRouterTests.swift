@@ -55,12 +55,12 @@ final class OpenRouterTests: XCTestCase {
         XCTAssertFalse(model.supportsImage)
     }
 
-    func testMissingKeyDoesNotMakeNetworkRequest() async {
-        let configuration = AIConfiguration(key: "", analysisModel: "model", imageModel: "model", generateStudio: false)
+    func testMissingServiceDoesNotMakeNetworkRequest() async {
+        let configuration = AIConfiguration(analysisModel: "model", imageModel: "model", generateStudio: false)
         do {
-            _ = try await OpenRouter().analyze(photos: [], configuration: configuration)
-            XCTFail("Expected missing key")
-        } catch { XCTAssertEqual(error.localizedDescription, AIError.missingKey.localizedDescription) }
+            _ = try await OpenRouter(baseURL: nil).analyze(photos: [], configuration: configuration)
+            XCTFail("Expected missing service")
+        } catch { XCTAssertEqual(error.localizedDescription, AIError.serviceUnavailable.localizedDescription) }
     }
 }
 
@@ -110,19 +110,19 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
     private func service() -> OpenRouter {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
-        return OpenRouter(session: URLSession(configuration: configuration))
+        return OpenRouter(session: URLSession(configuration: configuration), baseURL: URL(string: "https://drape-ai.example/api/v1/")!, developmentToken: "test-development-token")
     }
-    func testAuthenticatedAnalysisUsesExpectedEndpointAndReturnsTypedDetails() async throws {
+    func testAnalysisUsesDrapeServiceWithoutProviderCredentialsAndReturnsTypedDetails() async throws {
         var details = ItemDetails(); details.name = "Cream cardigan"; details.category = .outerwear
         let response = try JSONSerialization.data(withJSONObject: ["choices": [["message": ["content": String(data: try JSONEncoder().encode(details), encoding: .utf8)!]]]])
         StubURLProtocol.configure(status: 200, body: response)
-        let configuration = AIConfiguration(key: "test-key-not-a-secret", analysisModel: AIModelDefaults.analysis, imageModel: AIModelDefaults.image, generateStudio: false)
+        let configuration = AIConfiguration(analysisModel: AIModelDefaults.analysis, imageModel: AIModelDefaults.image, generateStudio: false)
         let result = try await service().analyze(photos: [PhotoInput(role: .front, data: DemoData.photo(color: .brown, symbol: "tshirt"))], configuration: configuration)
         XCTAssertEqual(result, details)
         let request = try XCTUnwrap(StubURLProtocol.request())
-        XCTAssertEqual(request.url?.absoluteString, "https://openrouter.ai/api/v1/chat/completions")
+        XCTAssertEqual(request.url?.absoluteString, "https://drape-ai.example/api/v1/chat/completions")
         XCTAssertEqual(request.httpMethod, "POST")
-        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-key-not-a-secret")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-development-token")
         XCTAssertEqual(try requestBody(request)["model"] as? String, "openai/gpt-6-luna")
     }
 
@@ -131,11 +131,11 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
         let response = try JSONSerialization.data(withJSONObject: ["data": [["b64_json": photo.base64EncodedString()]]])
         for model in [AIModelDefaults.image, "custom/image"] {
             StubURLProtocol.configure(status: 200, body: response)
-            let configuration = AIConfiguration(key: "test-key-not-a-secret", analysisModel: AIModelDefaults.analysis, imageModel: model, generateStudio: true)
+            let configuration = AIConfiguration(analysisModel: AIModelDefaults.analysis, imageModel: model, generateStudio: true)
             let result = try await service().studioPhoto(front: photo, configuration: configuration)
             XCTAssertFalse(result.isEmpty)
             let request = try XCTUnwrap(StubURLProtocol.request())
-            XCTAssertEqual(request.url?.absoluteString, "https://openrouter.ai/api/v1/images")
+            XCTAssertEqual(request.url?.absoluteString, "https://drape-ai.example/api/v1/images")
             let body = try requestBody(request)
             XCTAssertEqual(body["model"] as? String, model)
             XCTAssertEqual(body["resolution"] as? String, model == AIModelDefaults.image ? "1K" : nil)

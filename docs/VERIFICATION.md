@@ -41,3 +41,22 @@ The first test run revealed prematurely released in-memory test containers and n
 - No App Store Connect entry, signed distribution export, TestFlight upload, or App Review approval has been completed.
 - Cloud storage/sync is an architectural follow-up, not an implemented feature.
 - Before release, publish a completed privacy policy/support URL, finish App Store metadata/privacy answers, and perform the physical-device checks in `RELEASE.md`.
+
+## iOS 17.6 compatibility — 10 October 2026
+
+- Lowered the deployment target to iOS 17.6, including devices on iOS 17.6.1, in `project.yml` and the regenerated Xcode project.
+- Replaced the iOS 18-only `Tab` API with `tabItem` while retaining Wardrobe, Looks, and Settings navigation. No model or stored-data changes.
+- Signed Drape scheme tests on iPhone 17 Pro / iOS 26.5: **16 passed, 0 failed, 0 skipped**, including Keychain, persistence/photo restoration, and the three UI flows. Local results: `build/iOS17CompatibilityTests.xcresult`.
+- Unsigned Release device archive succeeded at `build/Drape-iOS17.xcarchive`. Both its `MinimumOSVersion` and executable `LC_BUILD_VERSION` minimum are **17.6**; the simulator app also declares 17.6.
+- No iOS 17 simulator runtime is installed. Compilation checks API availability for iOS 17.6, but execution on iOS 17.6.1 remains unverified. Before treating that version as device-tested, launch on the physical iPhone and check capture/import, save/relaunch, all three tabs, Vision processing, and device authentication.
+
+## Managed AI development service — 10 October 2026
+
+- Integrated latest `origin/main` (`a065804`, Luna/Seedream defaults) with the existing local iOS 17.6 work. The merge introduced no source-tree changes relative to the already-tested base.
+- Signed simulator scheme: **20 passed, 0 failed** (16 unit tests, 4 UI tests), including the new Ask AI flow without a provider-key field or upload modal. UI tests disable outbound paid AI. Result bundle: `build/Logs/Test/Test-Drape-2026.10.10_09-17-51-+0200.xcresult`.
+- Python/FastAPI gateway: **8 tests passed**, covering bearer authentication, provider-key isolation, model/settings validation, external-image-URL rejection, request-size and rate limits, safe provider failures without retries, and bounded studio requests.
+- CapRover `drape-ai`: one healthy container, no mounts or published host ports, HTTPS enabled and enforced. `/healthz` returned revision `52fd87c5233139f2`. Missing authentication returned 401; authenticated invalid input returned 400. All 127 pre-existing app definitions matched the baseline.
+- One paid live analysis through `https://drape-ai.cr.lvtd.dev/api/v1/chat/completions` succeeded with the synthetic cardigan JPEG. Reported cost: $0.0004643. It identified a cream cable-knit cardigan and left brand/size/care empty, but returned “Knitted fabric” as material despite the smoke prompt requesting fiber composition only. This validates transport, not metadata accuracy. The app's existing stricter analysis prompt remains in place and suggestions still require review. Evidence is in ignored `build/managed-ai-smoke/result.json`. Hosted studio generation was not paid-tested in this change.
+- Unsigned Release archive succeeded at `build/Drape-release-check.xcarchive`. Its service URL and development credential are empty. Neither the Release app nor the Debug simulator app contains the OpenRouter key.
+- Signed Debug device build succeeded and was installed and launched on the user-approved connected iPhone 14 Pro. No personal garment was uploaded during verification. The device's interactive Ask AI flow still requires user testing; installation/launch alone does not establish it.
+- AI is enabled only in privately configured Debug builds. Production authentication/app attestation and durable quotas remain required before public distribution; the development throttle resets on service restart.

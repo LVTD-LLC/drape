@@ -8,7 +8,7 @@ Photos are decoded to a maximum 1,800 pixels before storage. Re-encoding removes
 
 AI suggestions do not overwrite user metadata. Applying reviewed suggestions is explicit. Studio photos remain previews until selected. Device cleanup may fail when a subject cannot be isolated or Vision resources are unavailable; the original remains usable. OCR text is exposed as reference text, not guessed size/care metadata.
 
-Keychain stores the user's OpenRouter key with `WhenUnlockedThisDeviceOnly` accessibility. URLSession uses HTTPS directly to OpenRouter. There is no shared application key, backend secret, account database, analytics SDK, or advertising SDK. PhotosPicker requests access only to selected images. Camera access is requested when the user selects Camera. Optional Face ID/device-passcode protection covers the UI when the scene is inactive and locks on background entry.
+AI calls use the private Python/FastAPI gateway on CapRover, which holds the operator's OpenRouter key. The app never reads that key. An ignored Debug-only xcconfig supplies the HTTPS gateway address and a separate revocable development bearer token. That token is extractable from private development builds and is not public-release authentication. Release builds have no enabled gateway or development token. No account database, cloud wardrobe storage, analytics SDK, or advertising SDK is added. See [AI service](AI-SERVICE.md) for deployment, limits, and the required public-authentication follow-up. PhotosPicker requests access only to selected images. Camera access is requested when the user selects Camera. Optional Face ID/device-passcode protection covers the UI when the scene is inactive and locks on background entry.
 
 SwiftData's initial schema is version 1 in practice; before any shipping schema changes, introduce explicit VersionedSchema and SchemaMigrationPlan using this exact model layout as the initial version. Backup format is independently versioned, validates images and IDs, and merges missing objects transactionally. The 100 MB import/export limit is an explicit v1 constraint; large libraries should move to a streaming archive format before increasing this limit.
 
@@ -23,7 +23,8 @@ An Apple-only alternative is CloudKit with the user's iCloud account. Evaluate s
 - Analysis: structured JSON with explicit categories, empty strings for unknown values, bounded output tokens, no sensitive person inference.
 - Imagery: `/images`, one reference front photo, one output, faithful garment preservation prompt. Generation cannot guarantee exact fidelity; original comparison is part of the product.
 - Failure: safe HTTP status descriptions; no raw provider response in user alerts; no authorization/request payload logging.
-- Model selection: fetched capabilities plus a custom ID option. Provider-specific failures remain visible and recoverable.
+- Model selection: Drape owns fixed analysis and image choices; the gateway validates models and request limits. Provider errors are redacted and recoverable.
+- Upload confirmation: the disclosed Ask AI or Add and ask AI action submits photos directly; no second modal or customer provider setup.
 
 ## Reference documentation
 

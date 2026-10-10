@@ -1,0 +1,2 @@
+// Generate the ignored local file with scripts/configure-development.py.
+#include? "Development.local.xcconfig"

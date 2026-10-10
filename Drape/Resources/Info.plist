@@ -10,6 +10,8 @@
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
 <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
+<key>DrapeAIURL</key><string>$(DRAPE_AI_URL)</string>
+<key>DrapeDevelopmentToken</key><string>$(DRAPE_DEVELOPMENT_TOKEN)</string>
 <key>LSRequiresIPhoneOS</key><true/>
 <key>NSCameraUsageDescription</key><string>Photograph your clothes to add them to your wardrobe.</string>
 <key>NSFaceIDUsageDescription</key><string>Unlock your private wardrobe with Face ID.</string>
