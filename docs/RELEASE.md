@@ -8,7 +8,7 @@ Not implemented: public-release authentication and billing controls, server acco
 
 ## Before TestFlight
 
-1. Open `Drape.xcodeproj`, select Drape → Signing & Capabilities, and choose the intended Apple Developer team. Confirm the bundle ID `dev.lvtd.drape` is available for that team.
+1. Open `ios/Drape.xcodeproj`, select Drape → Signing & Capabilities, and choose the intended Apple Developer team. Confirm the bundle ID `dev.lvtd.drape` is available for that team.
 2. Register an App Store Connect app for the bundle ID. Choose the final seller, age rating, and availability.
 3. Run the app on a physical iPhone. Verify camera permission granted and denied, front-only capture, three-photo capture, rotation/orientation of photos, real garment segmentation, label OCR, Face ID/passcode lock, background/foreground, offline add/edit, and deletion.
 4. Implement and verify public authentication before enabling Release AI. With the managed service configured, test analysis and studio generation, unauthorized access, service quota/provider-credit failures, and request cancellation/interruption. Compare output with the original clothing. AI is a suggestion, not an authenticity guarantee.
@@ -19,7 +19,7 @@ Not implemented: public-release authentication and billing controls, server acco
 Command-line unsigned archive for build verification:
 
 ```sh
-xcodebuild -project Drape.xcodeproj -scheme Drape -configuration Release \
+xcodebuild -project ios/Drape.xcodeproj -scheme Drape -configuration Release \
   -destination 'generic/platform=iOS' -archivePath build/Drape.xcarchive \
   archive CODE_SIGNING_ALLOWED=NO
 ```

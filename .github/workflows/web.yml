@@ -1,0 +1,67 @@
+name: Web checks
+on:
+  pull_request:
+  workflow_call:
+
+jobs:
+  test:
+    defaults:
+      run:
+        working-directory: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: drape
+          POSTGRES_DB: drape
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:drape@localhost:5432/drape
+      CARGO_TERM_COLOR: always
+      # The capability matrix otherwise accumulates multi-GB debug/incremental artifacts.
+      # Production release profiles and the complete test matrix stay unchanged.
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: lean-ci-v1
+          workspaces: web -> target
+      - run: cargo install sqlx-cli --no-default-features --features postgres,rustls --locked
+      - run: cargo sqlx migrate run
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      # Fails if .sqlx is stale: regenerate with `cargo sqlx prepare --workspace`.
+      - run: cargo sqlx prepare --workspace --check -- --all-features --all-targets
+      - run: cargo test --workspace
+      - run: cargo clippy --workspace --all-targets --no-default-features -- -D warnings
+      - run: cargo test --workspace --no-default-features
+      - run: cargo clippy --workspace --all-targets --no-default-features --features blog -- -D warnings
+      - run: cargo test --workspace --no-default-features --features blog
+      - run: cargo clippy --workspace --all-targets --no-default-features --features docs -- -D warnings
+      - run: cargo test --workspace --no-default-features --features docs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test app/tests/*.test.cjs
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --workspace --all-features
+      - run: SQLX_OFFLINE=true cargo check --workspace --all-targets --all-features
+      - name: Check independent optional capabilities
+        run: |
+          for feature in stripe storage sentry-errors sentry-traces sentry-logs sentry-metrics sentry-replay posthog-web posthog-product posthog-errors posthog-logs posthog-traces; do
+            cargo clippy --workspace --all-targets --no-default-features --features "$feature" -- -D warnings
+            cargo test --workspace --no-default-features --features "$feature"
+            SQLX_OFFLINE=true cargo check --workspace --all-targets --no-default-features --features "$feature"
+          done
+      - run: cargo build --release --locked -p drape

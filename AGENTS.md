@@ -1,10 +1,15 @@
 # Drape
 
+Monorepo: `ios/` is the native iPhone app, `android/` is reserved for future Kotlin,
+and `web/` is the ShipRust-generated shared Rust backend and web scaffold. Read
+`web/AGENTS.md` before Rust changes. Shared docs and scripts live at the root.
+Do not implement Android or cloud wardrobe sync as part of a backend-only task.
+
 Native iPhone app. Prefer SwiftUI, SwiftData, PhotosUI, Vision, LocalAuthentication, Keychain, and URLSession. Deployment target iOS 17.6; build with a current stable Xcode. Keep the app useful offline.
 
-- `project.yml` is the XcodeGen source; commit the generated Xcode project as well.
+- `ios/project.yml` is the XcodeGen source; commit the generated Xcode project as well.
 - Use normal ad-hoc simulator signing for builds/tests. `CODE_SIGNING_ALLOWED=NO` breaks simulator Keychain access. It is only appropriate for the explicitly unsigned device archive check.
-- Never commit API keys, signing credentials, real wardrobe photos, or personal backups. The photo under `DrapeTests/Fixtures` is synthetic.
+- Never commit API keys, signing credentials, real wardrobe photos, or personal backups. The photo under `ios/DrapeTests/Fixtures` is synthetic.
 - Save source photos before processing. Preserve originals and user edits. New items automatically apply AI details and select the generated studio image. Preserve existing metadata and edits made while processing.
 - Every remote photo upload requires an explicit disclosed action (Add to wardrobe or Finish preparing, with nearby upload disclosure); do not add a second upload modal or customer key setup. Do not put shared OpenRouter or R2 credentials in a mobile binary.
 - No automatic paid retries. Keep model objects on the main actor, and do image work off the main actor.

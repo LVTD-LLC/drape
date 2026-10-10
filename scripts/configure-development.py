@@ -18,7 +18,7 @@ if not token:
     env.chmod(0o600)
 if len(token) < 32 or not all(c.isalnum() or c in '-_' for c in token):
     raise SystemExit('DRAPE_DEVELOPMENT_TOKEN must be a URL-safe token of at least 32 characters.')
-config = root / 'config/Development.local.xcconfig'
+config = root / 'ios/config/Development.local.xcconfig'
 config.write_text('// Private development build only. Never distribute this credential.\n'
                   'DRAPE_AI_URL = https:/$()/drape-ai.cr.lvtd.dev/api/v1/\n'
                   'DRAPE_DEVELOPMENT_TOKEN = ' + token + '\n')

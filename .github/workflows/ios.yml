@@ -9,6 +9,9 @@ jobs:
   test:
     runs-on: macos-26
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ios
     steps:
       - uses: actions/checkout@v4
       - name: Select installed Xcode
@@ -30,4 +33,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: iOS-test-results
-          path: build/TestResults.xcresult
+          path: ios/build/TestResults.xcresult
