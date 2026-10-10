@@ -1,0 +1,97 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/web.yml
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # Preserve the endpoint used by existing iPhone builds.
+      APP: drape-ai
+      # Both deployments are mandatory.
+      WORKER_APP_TOKEN: ${{ secrets.WORKER_APP_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require both deployment credentials
+        env:
+          WEB_TOKEN: ${{ secrets.APP_TOKEN }}
+        run: test -n "$WEB_TOKEN" && test -n "$WORKER_APP_TOKEN"
+      - name: Image name (ghcr requires lowercase)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: web
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          build-args: BUILD_REVISION=${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  deploy:
+    needs: [checks, build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP: drape-ai
+      WORKER_APP_TOKEN: ${{ secrets.WORKER_APP_TOKEN }}
+    steps:
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Deploy to CapRover
+        uses: caprover/deploy-from-github@058a3e0d8fb21bfc0ce207b79b1fc757d765a009
+        with:
+          server: ${{ secrets.CAPROVER_SERVER }}
+          app: ${{ env.APP }}
+          token: ${{ secrets.APP_TOKEN }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+      # Same image, worker role (JOBS_WORKER=only in that app's environment):
+      # runs background jobs and hourly cleanups while the web app serves HTTP.
+      - name: Deploy worker to CapRover
+        uses: caprover/deploy-from-github@058a3e0d8fb21bfc0ce207b79b1fc757d765a009
+        with:
+          server: ${{ secrets.CAPROVER_SERVER }}
+          app: drape-worker
+          token: ${{ env.WORKER_APP_TOKEN }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+      - name: Verify deployed revision
+        env:
+          EXPECTED_REVISION: ${{ github.sha }}
+          URL: ${{ vars.PRODUCTION_URL }}
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error --max-time 10 \
+              --dump-header /tmp/health-headers --output /dev/null \
+              "${URL%/}/healthz" &&
+              tr -d '\r' < /tmp/health-headers | grep -Fxi "x-deployment-revision: ${EXPECTED_REVISION}"; then
+              echo "revision ${EXPECTED_REVISION} is live"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "deployed revision did not become live in time" >&2
+          exit 1

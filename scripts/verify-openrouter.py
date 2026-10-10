@@ -17,7 +17,7 @@ OUTPUT.mkdir(parents=True, exist_ok=True)
 key = os.environ.get('OPENROUTER_API_KEY', '')
 if not key:
     sys.exit('OPENROUTER_API_KEY is not set.')
-image = (ROOT / 'DrapeTests/Fixtures/cardigan-source.png').read_bytes()
+image = (ROOT / 'ios/DrapeTests/Fixtures/cardigan-source.png').read_bytes()
 data_url = 'data:image/png;base64,' + base64.b64encode(image).decode()
 
 def post(endpoint, body):

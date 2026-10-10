@@ -8,9 +8,21 @@ Photos are decoded to a maximum 1,800 pixels before storage. Re-encoding removes
 
 AI results fill missing metadata automatically, preserving saved values and edits made during processing. New studio photos become the cover automatically; originals remain available in the carousel. Device cleanup may fail when a subject cannot be isolated or Vision resources are unavailable; the original remains usable. OCR text is exposed as reference text, not guessed size/care metadata.
 
-AI calls use the private Python/FastAPI gateway on CapRover, which holds the operator's OpenRouter key. The app never reads that key. An ignored Debug-only xcconfig supplies the HTTPS gateway address and a separate revocable development bearer token. That token is extractable from private development builds and is not public-release authentication. Release builds have no enabled gateway or development token. No account database, cloud wardrobe storage, analytics SDK, or advertising SDK is added. See [AI service](AI-SERVICE.md) for deployment, limits, and the required public-authentication follow-up. PhotosPicker requests access only to selected images. Camera access is requested when the user selects Camera. Optional Face ID/device-passcode protection covers the UI when the scene is inactive and locks on background entry.
+AI calls use the private Rust/Axum gateway in `web/` on CapRover, which holds the operator's OpenRouter key. The app never reads that key. An ignored Debug-only xcconfig supplies the HTTPS gateway address and a separate revocable development bearer token. That token is extractable from private development builds and is not public-release authentication. Release builds have no enabled gateway or development token. The iPhone remains local-only. ShipRust adds a separate Postgres database and authenticated web-account scaffold, but signup and external integrations are not configured in production. There is no cloud wardrobe storage or mobile account linking. See [AI service](AI-SERVICE.md) for deployment, limits, and the required public-authentication follow-up. PhotosPicker requests access only to selected images. Camera access is requested when the user selects Camera. Optional Face ID/device-passcode protection covers the UI when the scene is inactive and locks on background entry.
 
 SwiftData uses an explicit V1-to-V2 migration plan; the original model layout is retained as WardrobeSchemaV1. Backup format is independently versioned, validates images and IDs, and merges missing objects transactionally. The 100 MB import/export limit is an explicit v1 constraint; large libraries should move to a streaming archive format before increasing this limit.
+
+## Repository and service boundaries
+
+`ios/` owns the Swift app, `android/` is an empty future Kotlin boundary, and
+`web/` owns the Rust API plus the generated web UI. Both future mobile clients
+and the web catalog will share Rust business logic. No catalog frontend or
+synchronization is implemented by the initial backend migration.
+
+The web process serves the existing synchronous AI endpoints. A separate worker
+process runs ShipRust jobs and cleanup against dedicated Postgres; it never
+automatically retries AI work. Existing iPhone API requests and prompts are
+unchanged. See [AI service](AI-SERVICE.md) for topology and rollback.
 
 ## Cloud storage later
 

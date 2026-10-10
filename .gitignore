@@ -16,3 +16,8 @@ build-signed/
 
 config/*.local.xcconfig
 __pycache__/
+
+# Rust workspace and private mobile configuration
+web/target/
+ios/config/*.local.xcconfig
+web/storage/
