@@ -41,7 +41,6 @@ struct ItemCard: View {
                 .filter { !$0.isEmpty }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             if item.processingState == "processing" {
                 Label("Preparing", systemImage: "sparkles").font(.caption2).foregroundStyle(Style.accent)
-
             }
         }.accessibilityElement(children: .combine)
     }

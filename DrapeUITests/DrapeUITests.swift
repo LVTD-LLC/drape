@@ -43,7 +43,7 @@ import XCTest
         let position = app.staticTexts["photoPosition"]
         XCTAssertTrue(position.waitForExistence(timeout: 5))
         let previous = position.label
-        let carousel = app.otherElements["photoCarousel"]
+        let carousel = app.descendants(matching: .any).matching(identifier: "photoCarousel").firstMatch
         carousel.swipeLeft()
         XCTAssertNotEqual(position.label, previous)
         XCTAssertFalse(app.buttons["Review AI suggestions"].exists)
