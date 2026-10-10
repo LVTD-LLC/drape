@@ -17,8 +17,8 @@ def validate_request(path, body):
         # Only embedded images: never let the gateway fetch user-controlled URLs.
         image_urls = [part.get('image_url', {}).get('url', '') for message in body['messages']
                       for part in message.get('content', []) if part.get('type') == 'image_url']
-        if not 1 <= len(image_urls) <= 3:
-            raise ValueError('Expected one to three photos')
+        if not 1 <= len(image_urls) <= 6:
+            raise ValueError('Expected one to six photos')
     elif path == '/api/v1/images':
         if set(body) - {'model', 'prompt', 'input_references', 'n', 'resolution', 'aspect_ratio'}:
             raise ValueError('Unsupported fields')

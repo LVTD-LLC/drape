@@ -9,10 +9,12 @@ import XCTest
         XCTAssertFalse(app.buttons["savePiece"].isEnabled)
         app.swipeUp()
         app.buttons["testPhoto"].tap()
-        let name = app.textFields["itemName"]
-        name.tap(); name.typeText("My linen shirt")
+        XCTAssertFalse(app.textFields["itemName"].exists)
+        app.swipeUp()
+        app.buttons["testPhoto"].tap()
+        app.swipeUp()
         app.buttons["savePiece"].tap()
-        let piece = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "My linen shirt")).firstMatch
+        let piece = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "New piece")).firstMatch
         XCTAssertTrue(piece.waitForExistence(timeout: 10)); piece.tap()
         app.buttons["Piece options"].tap()
         app.buttons["Edit details"].tap()
@@ -28,22 +30,27 @@ import XCTest
         XCTAssertTrue(app.staticTexts["Start with a favorite."].waitForExistence(timeout: 5))
     }
 
-    func testAIRequiresNoCustomerKeyOrUploadDialog() {
-        let app = XCUIApplication(); app.launchArguments = ["--uitesting", "--seed"]; app.launch()
-        app.tabBars.buttons["Settings"].tap()
-        XCTAssertFalse(app.secureTextFields["OpenRouter API key"].exists)
-        XCTAssertTrue(app.switches["Generate studio photos"].exists)
-        app.tabBars.buttons["Wardrobe"].tap()
-        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Everyday linen shirt")).firstMatch.tap()
-        for _ in 0..<5 {
-            if app.buttons["Ask AI"].isHittable { break }
-            app.swipeUp()
-        }
-        app.buttons["Ask AI"].tap()
-        XCTAssertFalse(app.alerts["Send photos to OpenRouter?"].exists)
-        XCTAssertFalse(app.alerts["Something needs your attention"].exists)
-        // UI test launches have no gateway endpoint, so no paid requests are sent.
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Drape’s AI service is unavailable")).firstMatch.waitForExistence(timeout: 30))
+    func testCaptureAndDetailHaveNoReviewOrRepeatedAIControls() {
+        let app = XCUIApplication(); app.launchArguments = ["--uitesting"]; app.launch()
+        app.buttons["addPiece"].tap()
+        XCTAssertFalse(app.textFields["itemName"].exists)
+        XCTAssertFalse(app.buttons["Front photo, not added"].exists)
+        app.swipeUp()
+        app.buttons["testPhoto"].tap(); app.swipeUp(); app.buttons["testPhoto"].tap(); app.swipeUp()
+        app.buttons["Save photos only"].tap()
+        let piece = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "New piece")).firstMatch
+        XCTAssertTrue(piece.waitForExistence(timeout: 10)); piece.tap()
+        let position = app.staticTexts["photoPosition"]
+        XCTAssertTrue(position.waitForExistence(timeout: 5))
+        let previous = position.label
+        let carousel = app.descendants(matching: .any).matching(identifier: "photoCarousel").firstMatch
+        carousel.swipeLeft()
+        XCTAssertNotEqual(position.label, previous)
+        XCTAssertFalse(app.buttons["Review AI suggestions"].exists)
+        XCTAssertFalse(app.buttons["Ask AI"].exists)
+        XCTAssertFalse(app.buttons["Prepare photo"].exists)
+        app.swipeUp()
+        XCTAssertTrue(app.buttons["Finish preparing"].exists)
     }
 
     func testCreateLookFromWardrobe() {

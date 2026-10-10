@@ -60,6 +60,14 @@ class GatewayTests(unittest.TestCase):
         self.assertEqual(self.post([]).status_code, 400)
         self.assertFalse(self.calls)
 
+    def test_analysis_accepts_six_photos_but_rejects_seven(self):
+        body = analysis()
+        photo = body['messages'][0]['content'][0]
+        for count, status in [(6, 200), (7, 400)]:
+            body['messages'][0]['content'] = [photo] * count
+            self.assertEqual(self.post(body).status_code, status)
+        self.assertEqual(len(self.calls), 1)
+
     def test_rate_limit_is_enforced(self):
         import time
         app.state.attempts.extend([time.monotonic()] * 30)

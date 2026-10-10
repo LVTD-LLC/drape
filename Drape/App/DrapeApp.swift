@@ -11,7 +11,7 @@ import LocalAuthentication
         do {
             let testing = ProcessInfo.processInfo.arguments.contains("--uitesting")
             let configuration = ModelConfiguration(isStoredInMemoryOnly: testing)
-            container = try ModelContainer(for: Garment.self, Look.self, configurations: configuration)
+            container = try ModelContainer(for: Garment.self, Look.self, migrationPlan: WardrobeMigrationPlan.self, configurations: configuration)
             startupError = nil
         } catch {
             container = nil; startupError = error.localizedDescription
