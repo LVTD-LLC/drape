@@ -1,6 +1,6 @@
 # Drape
 
-A private wardrobe for the clothes you already love. A native iPhone app built with Swift 6, SwiftUI, SwiftData, PhotosUI, Vision, and Keychain. No third-party runtime dependencies.
+A private wardrobe for the clothes you already love. A native iPhone app built with Swift 6, SwiftUI, SwiftData, PhotosUI, Vision, and Keychain. No third-party iOS runtime dependencies.
 
 ## Run
 
@@ -16,24 +16,26 @@ The checked-in Xcode project is ready to open. If changing project structure, in
 
 For an iPhone, select your Apple Developer team in **Signing & Capabilities** and use a unique bundle identifier if `dev.lvtd.drape` is unavailable. Never commit signing certificates, profiles, API keys, or personal wardrobe exports.
 
+For hosted AI in a private Debug build, run `python3 scripts/configure-development.py` first; see [AI service setup](docs/AI-SERVICE.md). Release AI remains disabled until public authentication is implemented.
+
 ## Use
 
 1. Create your wardrobe. Add a front photo with the camera or photo picker. Back and label photos are optional.
 2. Name or categorize the piece, then save. The app keeps the photos first and attempts on-device background removal and label OCR.
 3. Edit any detail, mark favorites, search by description, and filter or group by clothing type.
-4. In Settings, save your own OpenRouter key securely. Choose independent analysis and image models. Turn on automatic suggestions or use **Ask AI** on a piece.
-5. Confirm the third-party photo upload. Review suggestions before saving. A generated studio photo is available for comparison and becomes the catalogue photo only if you enable it.
+4. Use **Ask AI** on a piece. Settings can also enable **Add and ask AI** and optional studio photos. No customer API key or provider setup is required.
+5. The AI button submits the photos as explained beside it. Review suggestions before saving. A generated studio photo is available for comparison and becomes the catalogue photo only if you enable it.
 6. Select pieces in **Looks** to save an outfit. Export a wardrobe backup to Files and restore it later when moving phones.
 
-The app works without OpenRouter. There is no login, server account, or cross-device sync in v1. Optional device authentication protects the local wardrobe. Local photos may be included in the user's device backup depending on system settings; an explicit export is the portable backup.
+The app works offline without AI. There is no login, server account, or cross-device sync in v1. Optional device authentication protects the local wardrobe. Local photos may be included in the user's device backup depending on system settings; an explicit export is the portable backup.
 
 ## AI behavior
 
 - Defaults: GPT-6 Luna (`openai/gpt-6-luna`) for analysis and Seedream 5.0 Flash (`bytedance-seed/seedream-5-0-flash`) for studio photos at 1K, 3:4. Existing Gemini defaults are updated once; custom model choices are preserved.
 - Analysis uses `/api/v1/chat/completions` with a strict JSON schema. Unknown label-derived fields stay empty. The app stores suggestions separately from saved user edits.
 - Studio photos use `/api/v1/images` with the original front photo as an input reference. Originals are never replaced. Generative results may change clothing details.
-- Models are discovered through OpenRouter's model catalogue; custom model IDs are supported. Provider compatibility is ultimately checked by the API.
-- The app sends normalized JPEGs without EXIF/GPS metadata. The key remains in the device Keychain. Upload consent is required for every add/AI action. Analysis requests disallow providers that collect data; image generation follows the selected provider's policy.
+- Drape manages the model choices on its Python/FastAPI service. See [AI service setup](docs/AI-SERVICE.md) for the private CapRover development deployment and iPhone build configuration.
+- The app sends normalized JPEGs without EXIF/GPS metadata. The OpenRouter key stays on the backend. Tapping Ask AI or Add and ask AI confirms each upload. Analysis requests disallow providers that collect data; image generation follows the selected provider's policy.
 - No automatic paid retry. Interrupted work is marked for manual retry on next launch. Keep Drape open during processing.
 
 For an explicit paid integration smoke test using the synthetic test image:

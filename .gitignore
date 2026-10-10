@@ -13,3 +13,6 @@ xcuserdata/
 
 build-device/
 build-signed/
+
+config/*.local.xcconfig
+__pycache__/

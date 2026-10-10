@@ -46,7 +46,6 @@ struct PhotoInput: Sendable {
 }
 
 struct AIConfiguration: Sendable {
-    let key: String
     let analysisModel: String
     let imageModel: String
     let generateStudio: Bool
@@ -55,7 +54,33 @@ struct AIConfiguration: Sendable {
 actor OpenRouter {
     static let shared = OpenRouter()
     private let session: URLSession
-    init(session: URLSession = .shared) { self.session = session }
+    private let baseURL: URL?
+    private let developmentToken: String
+    // Private development credentials are available only to Debug builds.
+    static var developmentURL: URL? {
+        #if DEBUG
+        guard !ProcessInfo.processInfo.arguments.contains("--uitesting"),
+              let raw = Bundle.main.object(forInfoDictionaryKey: "DrapeAIURL") as? String,
+              let url = URL(string: raw), url.scheme == "https", url.host != nil else { return nil }
+        return url
+        #else
+        return nil
+        #endif
+    }
+    static var developmentCredential: String {
+        #if DEBUG
+        let value = Bundle.main.object(forInfoDictionaryKey: "DrapeDevelopmentToken") as? String ?? ""
+        return value.hasPrefix("$(") ? "" : value
+        #else
+        return ""
+        #endif
+    }
+    init(session: URLSession = .shared, baseURL: URL? = OpenRouter.developmentURL,
+         developmentToken: String = OpenRouter.developmentCredential) {
+        self.session = session
+        self.baseURL = baseURL
+        self.developmentToken = developmentToken
+    }
 
     func models() async throws -> [ModelOption] {
         let request = URLRequest(url: URL(string: "https://openrouter.ai/api/v1/models")!)
@@ -81,7 +106,7 @@ actor OpenRouter {
                 "schema": ["type": "object", "properties": properties, "required": fields, "additionalProperties": false]]],
             "provider": ["require_parameters": true, "data_collection": "deny"]
         ]
-        let data = try await post(path: "chat/completions", body: body, key: configuration.key)
+        let data = try await post(path: "chat/completions", body: body)
         return try Self.decodeDetails(data)
     }
 
@@ -110,7 +135,7 @@ actor OpenRouter {
             body["resolution"] = "1K"
             body["aspect_ratio"] = "3:4"
         }
-        let data = try await post(path: "images", body: body, key: configuration.key)
+        let data = try await post(path: "images", body: body)
         return try Self.decodeImage(data)
     }
 
@@ -124,19 +149,24 @@ actor OpenRouter {
         return try ImageTools.normalized(image)
     }
 
-    private func post(path: String, body: [String: Any], key: String) async throws -> Data {
-        guard !key.isEmpty else { throw AIError.missingKey }
-        var request = URLRequest(url: URL(string: "https://openrouter.ai/api/v1/\(path)")!)
+    private func post(path: String, body: [String: Any]) async throws -> Data {
+        guard let baseURL, !developmentToken.isEmpty else { throw AIError.serviceUnavailable }
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
         request.httpMethod = "POST"
+        request.setValue("Bearer \(developmentToken)", forHTTPHeaderField: "Authorization")
         request.timeoutInterval = 150
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Drape", forHTTPHeaderField: "X-OpenRouter-Title")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         return try await perform(request)
     }
     private func perform(_ request: URLRequest) async throws -> Data {
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do { (data, response) = try await session.data(for: request) }
+        catch let error as URLError where [.cannotConnectToHost, .cannotFindHost].contains(error.code) {
+            throw AIError.serviceUnavailable
+        }
         guard let http = response as? HTTPURLResponse else { throw AIError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else { throw AIError.http(http.statusCode) }
         guard data.count <= 40_000_000 else { throw AIError.invalidResponse }
@@ -145,15 +175,15 @@ actor OpenRouter {
 }
 
 enum AIError: LocalizedError {
-    case missingKey, invalidResponse, http(Int)
+    case serviceUnavailable, invalidResponse, http(Int)
     var errorDescription: String? {
         switch self {
-        case .missingKey: "Connect OpenRouter in Settings to use AI. You can still add and edit clothes without it."
-        case .invalidResponse: "The model returned an unexpected result. Your photos are safe. Try another model in Settings."
-        case .http(401): "OpenRouter didn’t accept this API key. Update it in Settings."
-        case .http(402): "Your OpenRouter account needs credits. Your item has been saved."
-        case .http(429): "OpenRouter is busy or rate-limited. Wait a moment, then try again."
-        case .http(let code): "OpenRouter couldn’t complete this request (\(code)). Try again or choose another model in Settings."
+        case .serviceUnavailable: "Drape’s AI service is unavailable right now. Your photos are saved. Try again later."
+        case .invalidResponse: "AI returned an unexpected result. Your photos are safe. Try again later."
+        case .http(401): "Drape’s AI service is temporarily unavailable. Your photos are safe. Try again later."
+        case .http(402): "Drape’s AI service is temporarily unavailable. Your item has been saved. Try again later."
+        case .http(429): "Drape’s AI service is busy. Wait a moment, then try again."
+        case .http(let code): "Drape couldn’t complete this AI request (\(code)). Your photos are safe. Try again later."
         }
     }
 }
