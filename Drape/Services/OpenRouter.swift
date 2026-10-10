@@ -1,5 +1,23 @@
 import Foundation
 
+enum AIModelDefaults {
+    static let analysis = "openai/gpt-6-luna"
+    static let image = "bytedance-seed/seedream-5-0-flash"
+
+    static func migrateSavedChoices(in defaults: UserDefaults = .standard) {
+        let migrationKey = "didAdoptLunaAndSeedreamDefaults"
+        guard !defaults.bool(forKey: migrationKey) else { return }
+        for (key, previous, replacement) in [
+            ("analysisModel", "google/gemini-2.5-flash", analysis),
+            ("imageModel", "google/gemini-2.5-flash-image", image)
+        ] {
+            let saved = defaults.string(forKey: key)
+            if saved == nil || saved == previous { defaults.set(replacement, forKey: key) }
+        }
+        defaults.set(true, forKey: migrationKey)
+    }
+}
+
 struct ModelOption: Decodable, Identifiable, Sendable {
     let id: String
     let name: String
@@ -82,12 +100,16 @@ actor OpenRouter {
     }
 
     func studioPhoto(front: Data, configuration: AIConfiguration) async throws -> Data {
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": configuration.imageModel,
             "prompt": "Edit this photograph into a clean, realistic e-commerce catalogue photograph of the EXACT same garment. Isolate this one item on a pure white background, centered and fully visible with generous margins. Give it natural, lightly filled ghost-mannequin volume, straighten its pose and gently smooth incidental wrinkles. Remove the wearer, hanger and background. Preserve the actual silhouette, proportions, color, fabric texture, print, stitching, buttons and logos exactly. Never invent hidden details, add accessories, change the garment or add text. If shape is unclear, preserve it rather than inventing it. Return one image.",
             "input_references": [["type": "image_url", "image_url": ["url": "data:image/jpeg;base64," + (try ImageTools.normalized(front)).base64EncodedString()]]],
             "n": 1
         ]
+        if configuration.imageModel == AIModelDefaults.image {
+            body["resolution"] = "1K"
+            body["aspect_ratio"] = "3:4"
+        }
         let data = try await post(path: "images", body: body, key: configuration.key)
         return try Self.decodeImage(data)
     }

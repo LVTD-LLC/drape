@@ -7,6 +7,7 @@ import LocalAuthentication
     private let startupError: String?
     @State private var processor = ProcessingCoordinator()
     init() {
+        AIModelDefaults.migrateSavedChoices()
         do {
             let testing = ProcessInfo.processInfo.arguments.contains("--uitesting")
             let configuration = ModelConfiguration(isStoredInMemoryOnly: testing)
