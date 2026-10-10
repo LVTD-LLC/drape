@@ -7,8 +7,8 @@ struct SettingsView: View {
     @Environment(ProcessingCoordinator.self) private var processor
     @AppStorage("aiEnabled") private var aiEnabled = false
     @AppStorage("studioEnabled") private var studioEnabled = false
-    @AppStorage("analysisModel") private var analysisModel = "google/gemini-2.5-flash"
-    @AppStorage("imageModel") private var imageModel = "google/gemini-2.5-flash-image"
+    @AppStorage("analysisModel") private var analysisModel = AIModelDefaults.analysis
+    @AppStorage("imageModel") private var imageModel = AIModelDefaults.image
     @AppStorage("lockEnabled") private var lockEnabled = false
     @State private var key = ""
     @State private var keySaved = false

@@ -6,8 +6,8 @@ struct ItemDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(ProcessingCoordinator.self) private var processor
-    @AppStorage("analysisModel") private var analysisModel = "google/gemini-2.5-flash"
-    @AppStorage("imageModel") private var imageModel = "google/gemini-2.5-flash-image"
+    @AppStorage("analysisModel") private var analysisModel = AIModelDefaults.analysis
+    @AppStorage("imageModel") private var imageModel = AIModelDefaults.image
     @AppStorage("studioEnabled") private var studioEnabled = false
     @State private var editing = false
     @State private var reviewing = false

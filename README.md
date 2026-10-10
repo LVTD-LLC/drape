@@ -29,6 +29,7 @@ The app works without OpenRouter. There is no login, server account, or cross-de
 
 ## AI behavior
 
+- Defaults: GPT-6 Luna (`openai/gpt-6-luna`) for analysis and Seedream 5.0 Flash (`bytedance-seed/seedream-5-0-flash`) for studio photos at 1K, 3:4. Existing Gemini defaults are updated once; custom model choices are preserved.
 - Analysis uses `/api/v1/chat/completions` with a strict JSON schema. Unknown label-derived fields stay empty. The app stores suggestions separately from saved user edits.
 - Studio photos use `/api/v1/images` with the original front photo as an input reference. Originals are never replaced. Generative results may change clothing details.
 - Models are discovered through OpenRouter's model catalogue; custom model IDs are supported. Provider compatibility is ultimately checked by the API.
