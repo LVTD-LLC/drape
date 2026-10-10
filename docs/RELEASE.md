@@ -2,7 +2,7 @@
 
 ## Product scope
 
-Native iPhone app, iOS 18 or newer, compiled with the installed Xcode 26.5 SDK. Local catalogue, capture/import, local image isolation and label OCR, optional OpenRouter AI, editable details, favorite/search/filter/group, manual saved outfits, Face ID/device-passcode lock, and export/restore.
+Native iPhone app, iOS 17.6 or newer, compiled with the installed Xcode 26.5 SDK. Local catalogue, capture/import, local image isolation and label OCR, optional OpenRouter AI, editable details, favorite/search/filter/group, manual saved outfits, Face ID/device-passcode lock, and export/restore.
 
 Not implemented: server accounts, cross-device sync, managed/shared AI billing, virtual try-on, or AI outfit generation. The user supplies an OpenRouter key for optional remote processing. No shared key belongs in a distributed binary.
 

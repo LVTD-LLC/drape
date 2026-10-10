@@ -41,3 +41,11 @@ The first test run revealed prematurely released in-memory test containers and n
 - No App Store Connect entry, signed distribution export, TestFlight upload, or App Review approval has been completed.
 - Cloud storage/sync is an architectural follow-up, not an implemented feature.
 - Before release, publish a completed privacy policy/support URL, finish App Store metadata/privacy answers, and perform the physical-device checks in `RELEASE.md`.
+
+## iOS 17.6 compatibility — 10 October 2026
+
+- Lowered the deployment target to iOS 17.6, including devices on iOS 17.6.1, in `project.yml` and the regenerated Xcode project.
+- Replaced the iOS 18-only `Tab` API with `tabItem` while retaining Wardrobe, Looks, and Settings navigation. No model or stored-data changes.
+- Signed Drape scheme tests on iPhone 17 Pro / iOS 26.5: **16 passed, 0 failed, 0 skipped**, including Keychain, persistence/photo restoration, and the three UI flows. Local results: `build/iOS17CompatibilityTests.xcresult`.
+- Unsigned Release device archive succeeded at `build/Drape-iOS17.xcarchive`. Both its `MinimumOSVersion` and executable `LC_BUILD_VERSION` minimum are **17.6**; the simulator app also declares 17.6.
+- No iOS 17 simulator runtime is installed. Compilation checks API availability for iOS 17.6, but execution on iOS 17.6.1 remains unverified. Before treating that version as device-tested, launch on the physical iPhone and check capture/import, save/relaunch, all three tabs, Vision processing, and device authentication.

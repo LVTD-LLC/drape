@@ -1,6 +1,6 @@
 # Drape
 
-Native iPhone app. Prefer SwiftUI, SwiftData, PhotosUI, Vision, LocalAuthentication, Keychain, and URLSession. Deployment target iOS 18; build with a current stable Xcode. Keep the app useful offline.
+Native iPhone app. Prefer SwiftUI, SwiftData, PhotosUI, Vision, LocalAuthentication, Keychain, and URLSession. Deployment target iOS 17.6; build with a current stable Xcode. Keep the app useful offline.
 
 - `project.yml` is the XcodeGen source; commit the generated Xcode project as well.
 - Use normal ad-hoc simulator signing for builds/tests. `CODE_SIGNING_ALLOWED=NO` breaks simulator Keychain access. It is only appropriate for the explicitly unsigned device archive check.

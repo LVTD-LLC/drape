@@ -2,7 +2,7 @@ name: Drape
 options:
   bundleIdPrefix: dev.lvtd
   deploymentTarget:
-    iOS: '18.0'
+    iOS: '17.6'
   xcodeVersion: '26.5'
 settings:
   base:

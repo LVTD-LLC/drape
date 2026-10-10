@@ -52,9 +52,12 @@ struct RootView: View {
                 }.padding(32).frame(maxWidth: .infinity, maxHeight: .infinity).background(Style.canvas)
             } else {
                 TabView {
-                    Tab("Wardrobe", systemImage: "square.grid.2x2") { WardrobeView() }
-                    Tab("Looks", systemImage: "rectangle.on.rectangle.angled") { LooksView() }
-                    Tab("Settings", systemImage: "slider.horizontal.3") { SettingsView() }
+                    WardrobeView()
+                        .tabItem { Label("Wardrobe", systemImage: "square.grid.2x2") }
+                    LooksView()
+                        .tabItem { Label("Looks", systemImage: "rectangle.on.rectangle.angled") }
+                    SettingsView()
+                        .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
                 }
             }
             if scenePhase != .active && lockEnabled {

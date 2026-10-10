@@ -4,7 +4,7 @@ A private wardrobe for the clothes you already love. A native iPhone app built w
 
 ## Run
 
-Open `Drape.xcodeproj` in Xcode 26.5 or newer, select the **Drape** scheme, choose an iPhone simulator, and run. The deployment target is iOS 18; the app builds against the installed SDK and adopts native iOS 26 controls. Camera capture and device authentication need an actual iPhone for full verification.
+Open `Drape.xcodeproj` in Xcode 26.5 or newer, select the **Drape** scheme, choose an iPhone simulator, and run. The deployment target is iOS 17.6 (including iOS 17.6.1); the app builds against the installed SDK and adopts native iOS 26 controls on newer devices. Camera capture and device authentication need an actual iPhone for full verification.
 
 ```sh
 xcodebuild -project Drape.xcodeproj -scheme Drape \
