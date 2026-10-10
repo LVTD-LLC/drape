@@ -2,6 +2,37 @@ import XCTest
 @testable import Drape
 
 final class OpenRouterTests: XCTestCase {
+    func testModelDefaultsMigrateMissingAndLegacyChoicesWithoutReplacingCustomChoices() throws {
+        let suite = "DrapeModelDefaultsTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        for (analysis, image, expectedAnalysis, expectedImage) in [
+            (nil, nil, AIModelDefaults.analysis, AIModelDefaults.image),
+            ("google/gemini-2.5-flash", "google/gemini-2.5-flash-image", AIModelDefaults.analysis, AIModelDefaults.image),
+            ("custom/analysis", "google/gemini-2.5-flash-image", "custom/analysis", AIModelDefaults.image),
+            ("google/gemini-2.5-flash", "custom/image", AIModelDefaults.analysis, "custom/image")
+        ] as [(String?, String?, String, String)] {
+            defaults.removePersistentDomain(forName: suite)
+            defaults.set(analysis, forKey: "analysisModel")
+            defaults.set(image, forKey: "imageModel")
+            AIModelDefaults.migrateSavedChoices(in: defaults)
+            XCTAssertEqual(defaults.string(forKey: "analysisModel"), expectedAnalysis)
+            XCTAssertEqual(defaults.string(forKey: "imageModel"), expectedImage)
+        }
+    }
+
+    func testModelDefaultsMigrationDoesNotOverrideLaterSelections() throws {
+        let suite = "DrapeModelDefaultsTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        AIModelDefaults.migrateSavedChoices(in: defaults)
+        defaults.set("google/gemini-2.5-flash", forKey: "analysisModel")
+        defaults.set("google/gemini-2.5-flash-image", forKey: "imageModel")
+        AIModelDefaults.migrateSavedChoices(in: defaults)
+        XCTAssertEqual(defaults.string(forKey: "analysisModel"), "google/gemini-2.5-flash")
+        XCTAssertEqual(defaults.string(forKey: "imageModel"), "google/gemini-2.5-flash-image")
+    }
+
     func testStructuredResponseDecodingAndMissingFieldsRejection() throws {
         var details = ItemDetails(); details.name = "Navy shirt"; details.category = .tops; details.color = "Navy"
         let json = String(data: try JSONEncoder().encode(details), encoding: .utf8)!
@@ -61,6 +92,21 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
 }
 
 @MainActor final class OpenRouterTransportTests: XCTestCase {
+    private func requestBody(_ request: URLRequest) throws -> [String: Any] {
+        var data = request.httpBody ?? Data()
+        if let stream = request.httpBodyStream {
+            stream.open()
+            defer { stream.close() }
+            var buffer = [UInt8](repeating: 0, count: 4096)
+            while stream.hasBytesAvailable {
+                let count = stream.read(&buffer, maxLength: buffer.count)
+                guard count > 0 else { break }
+                data.append(contentsOf: buffer.prefix(count))
+            }
+        }
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+
     private func service() -> OpenRouter {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [StubURLProtocol.self]
@@ -70,13 +116,33 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
         var details = ItemDetails(); details.name = "Cream cardigan"; details.category = .outerwear
         let response = try JSONSerialization.data(withJSONObject: ["choices": [["message": ["content": String(data: try JSONEncoder().encode(details), encoding: .utf8)!]]]])
         StubURLProtocol.configure(status: 200, body: response)
-        let configuration = AIConfiguration(key: "test-key-not-a-secret", analysisModel: "test/model", imageModel: "test/image", generateStudio: false)
+        let configuration = AIConfiguration(key: "test-key-not-a-secret", analysisModel: AIModelDefaults.analysis, imageModel: AIModelDefaults.image, generateStudio: false)
         let result = try await service().analyze(photos: [PhotoInput(role: .front, data: DemoData.photo(color: .brown, symbol: "tshirt"))], configuration: configuration)
         XCTAssertEqual(result, details)
         let request = try XCTUnwrap(StubURLProtocol.request())
         XCTAssertEqual(request.url?.absoluteString, "https://openrouter.ai/api/v1/chat/completions")
         XCTAssertEqual(request.httpMethod, "POST")
         XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-key-not-a-secret")
+        XCTAssertEqual(try requestBody(request)["model"] as? String, "openai/gpt-6-luna")
+    }
+
+    func testStudioRequestUsesSeedreamComparisonSettingsOnlyForSeedream() async throws {
+        let photo = DemoData.photo(color: .brown, symbol: "tshirt")
+        let response = try JSONSerialization.data(withJSONObject: ["data": [["b64_json": photo.base64EncodedString()]]])
+        for model in [AIModelDefaults.image, "custom/image"] {
+            StubURLProtocol.configure(status: 200, body: response)
+            let configuration = AIConfiguration(key: "test-key-not-a-secret", analysisModel: AIModelDefaults.analysis, imageModel: model, generateStudio: true)
+            let result = try await service().studioPhoto(front: photo, configuration: configuration)
+            XCTAssertFalse(result.isEmpty)
+            let request = try XCTUnwrap(StubURLProtocol.request())
+            XCTAssertEqual(request.url?.absoluteString, "https://openrouter.ai/api/v1/images")
+            let body = try requestBody(request)
+            XCTAssertEqual(body["model"] as? String, model)
+            XCTAssertEqual(body["resolution"] as? String, model == AIModelDefaults.image ? "1K" : nil)
+            XCTAssertEqual(body["aspect_ratio"] as? String, model == AIModelDefaults.image ? "3:4" : nil)
+            XCTAssertEqual(body["n"] as? Int, 1)
+            XCTAssertEqual((body["input_references"] as? [[String: Any]])?.count, 1)
+        }
     }
     func testRateLimitReturnsRecoverableMessageWithoutProviderBody() async {
         StubURLProtocol.configure(status: 429, body: Data("sensitive provider payload".utf8))
