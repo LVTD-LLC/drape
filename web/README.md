@@ -1,5 +1,11 @@
 # Drape
 
+This is the Rust workspace inside the Drape monorepo. Start with the
+[repository README](../README.md) and [live deployment guide](../docs/AI-SERVICE.md).
+The production Docker image listens on port 8000; `cargo run` defaults to 3000.
+The workflows live in `../.github/workflows/`. The starter guides below describe
+the generated features; the shared deployment guide defines Drape’s configuration.
+
 A SaaS starter in Rust. Axum, Maud, Postgres, one static binary.
 
 What's in this iteration:
@@ -16,7 +22,7 @@ What's in this iteration:
 ## Run it
 
 ```bash
-docker compose up -d        # Postgres 18 on localhost:5433
+docker compose up -d        # Postgres 18 on localhost:55434
 cp .env.example .env
 cargo run                   # http://localhost:3000
 ```

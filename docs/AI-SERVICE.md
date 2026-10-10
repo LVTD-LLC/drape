@@ -13,7 +13,8 @@ The OpenRouter key stays on the server; photos pass through bounded memory only.
 accepts embedded JPEGs only, and restricts requests to the two existing models and
 settings. Limits remain 12 MB request, 40 MB response, two concurrent requests,
 and 30 admitted attempts/hour. The in-memory counter resets on restart. Keep one
-web replica. There are no paid retries or redirects. AI routes have their own body
+web replica. The web container has a 190-second shutdown grace period to drain
+in-flight AI requests during rollouts. There are no paid retries or redirects. AI routes have their own body
 and timeout policy, separate from ShipRust's small browser forms and account API.
 
 `GET /healthz` returns status, private-development mode and build revision.
@@ -58,7 +59,8 @@ existing gateway is a non-persistent CapRover app.
 pinned `caprover/deploy-from-github` action. CapRover must have GHCR pull access.
 Repository secrets are `CAPROVER_SERVER`, `APP_TOKEN` (drape-ai), and
 `WORKER_APP_TOKEN` (drape-worker). Both app tokens are required. `PRODUCTION_URL`
-is `https://drape-ai.cr.lvtd.dev`. Deployments run on main and can be dispatched.
+is `https://drape-ai.cr.lvtd.dev`. Rust changes under `web/` deploy on main; workflow-only changes can be dispatched.
+iOS, Android, documentation, and verification-script edits do not rebuild the Rust image.
 The pipeline verifies the public web revision after CapRover accepts the deployment;
 operators also verify the worker's Docker health, role and image revision.
 

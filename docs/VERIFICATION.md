@@ -1,3 +1,23 @@
+# Rust migration verification — 11 October 2026
+
+- ShipRust generated all available features, template `386e5df`; provenance retained in `web/.shiprust.toml`.
+- Backend revision `f6e6b4d8efa0eef1f94d5ec07dbc352308328e53` deployed through [GitHub Actions](https://github.com/LVTD-LLC/drape/actions/runs/38093193074).
+- Web and worker run the same image digest `sha256:5fd90cc0c36c69aff2af67cb762d678127e5e1826e0355ac434e0dd800d46668`, with separate healthy containers and `JOBS_WORKER=false` / `only` respectively.
+- Public web health and private worker health reported the exact backend revision. The image runs as a non-root user and contains no OpenRouter credential.
+- Dedicated private-network Postgres applied all 13 starter migrations. No web users, jobs, or migrated mobile wardrobe data existed at cutover. Signup and external integrations remain unconfigured.
+- Local Rust checks: 147 tests with all features, 113 with no defaults, 17 JavaScript tests, fmt, clippy, SQLx metadata verification, and offline compilation passed. GitHub additionally passed every generated independent-integration configuration and the release build.
+- The Drape iPhone simulator scheme passed 22 unit tests and four UI tests. The added live test skips ordinary test/CI runs unless explicitly enabled.
+- The actual iOS URLSession client then sent the synthetic cardigan to the deployed Rust gateway: analysis and studio generation both passed in one 19.197-second test, with no paid retry. The first helper invocation stopped before any network request because Xcode emitted v1 rather than v2 xctestrun metadata; the helper now supports both.
+- Swift application source, iPhone gateway URL, development credential, and upload disclosure are unchanged. The generated Xcode project was moved and regenerated for the additional test. Existing local signing edits were preserved outside the commits.
+- Original Nginx configuration was retained; every excluded CapRover app's non-runtime settings matched the baseline. Old Python image is retained for rollback. Web shutdown grace is 190 seconds for active AI requests.
+- Android is a README-only placeholder; the web catalog and cross-device sync are not implemented.
+
+The backend revision above is intentionally independent of later documentation and
+verification-helper commits. Runtime changes under `web/` trigger deployment;
+operator README/AGENTS files, mobile code and root verification scripts do not.
+
+---
+
 # Verification — 9 October 2026
 
 ## Confirmed locally

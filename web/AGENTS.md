@@ -117,7 +117,7 @@ from `views/mod.rs`.
 ## Commands
 
 ```
-docker compose up -d                   # Postgres 18 on :5433
+docker compose up -d                   # Postgres 18 on :55434
 cp .env.example .env
 cargo run                              # http://localhost:3000
 cargo test --workspace                 # needs DATABASE_URL

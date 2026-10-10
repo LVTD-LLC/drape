@@ -22,10 +22,17 @@ with log.open('w') as output:
                    cwd=root, stdout=output, stderr=subprocess.STDOUT, check=True)
     original = next((build / 'Build/Products').glob('Drape_*.xctestrun'))
     config = plistlib.loads(original.read_bytes())
-    for configuration in config['TestConfigurations']:
-        for target in configuration['TestTargets']:
-            if target['BlueprintName'] == 'DrapeTests':
-                target.setdefault('EnvironmentVariables', {})['DRAPE_LIVE_GATEWAY_SMOKE'] = '1'
+    # Xcode emits either v1 target dictionaries or v2 TestConfigurations.
+    if 'TestConfigurations' in config:
+        targets = [target for configuration in config['TestConfigurations']
+                   for target in configuration['TestTargets']
+                   if target.get('BlueprintName') == 'DrapeTests']
+    else:
+        targets = [value for name, value in config.items()
+                   if name == 'DrapeTests' or name.startswith('DrapeTests_')]
+    if len(targets) != 1:
+        raise RuntimeError('Expected exactly one DrapeTests target; no paid requests were sent')
+    targets[0].setdefault('EnvironmentVariables', {})['DRAPE_LIVE_GATEWAY_SMOKE'] = '1'
     # Keep it beside the original: __TESTROOT__ paths are relative to this file.
     live = original.with_name('LiveGateway.xctestrun')
     try:
