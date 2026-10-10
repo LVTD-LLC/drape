@@ -35,4 +35,4 @@ UI-test launches disable the AI endpoint, preventing accidental paid requests. A
 
 ## Privacy and release
 
-The Ask AI / Add and ask AI button is the explicit per-action upload confirmation. Nearby text explains the upload; there is no second modal or customer API-key setup. Originals are saved before requests, suggestions need acceptance, and studio images need explicit selection. Add without AI remains available. Public privacy and App Store disclosures must describe Drape's gateway and OpenRouter processing before release.
+The Add to wardrobe / Finish preparing button is the explicit per-action upload confirmation. Nearby text explains the upload; there is no second modal or customer API-key setup. Originals are saved before requests, details fill automatically without replacing edits, and new studio images become the cover automatically. Save photos only remains available. Public privacy and App Store disclosures must describe Drape's gateway and OpenRouter processing before release.

@@ -13,6 +13,7 @@
 		2A85B353EBA1BB9BE5C4226C /* DetailsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 254723F6887F8F79ACD2F16D /* DetailsEditor.swift */; };
 		356C61647FB1B47DFBD616CA /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4034F81F65EA2E74A95468 /* Keychain.swift */; };
 		3D3A360DF9565D0F086F77F5 /* ImageTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EACDCA6693E14C9FEACC2BF /* ImageTools.swift */; };
+		4C4B74C04706ACABF6261E1B /* ProcessingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53521709823EF727F3BC4F1A /* ProcessingTests.swift */; };
 		5599EA134F26DE446416B1C3 /* DrapeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DEBDBDD7AE4715986C69428 /* DrapeApp.swift */; };
 		55E48C88CDEB762B616A5A44 /* ItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 612032FE1770D11BFB654B69 /* ItemDetailView.swift */; };
 		5B3F90EB6058542F35C369B8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2CA44DEA7111A404DFEEA3FC /* PrivacyInfo.xcprivacy */; };
@@ -26,6 +27,7 @@
 		CAF9C3AE09A484CA5E2C2C28 /* WardrobeBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C0D26B1676CD29ACA3962E /* WardrobeBackup.swift */; };
 		DE4E22C837A4A9F32EB756A0 /* KeychainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9AFA6EF271683379FF6DD7 /* KeychainTests.swift */; };
 		E092D5451FD53DFCEF6EFF17 /* ProcessingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBA7537BB7F38FC1524561F /* ProcessingCoordinator.swift */; };
+		E27B14213D184E2918F41112 /* MigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E4B7C2D9C9EA1EA08FCDF6 /* MigrationTests.swift */; };
 		E8562C43C0D3DFDF0AD77E36 /* Style.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B4DC6528A92B6296CDCFCA0 /* Style.swift */; };
 		F554148FD51374C396F55644 /* DemoData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B186140159C7AFD119AA5D1C /* DemoData.swift */; };
 		FCAABA6FC5BD170DC538F5ED /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F71647D0860C2F1001D6202E /* Assets.xcassets */; };
@@ -61,7 +63,9 @@
 		3C3794349721D4711DD47CB5 /* DrapeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrapeUITests.swift; sourceTree = "<group>"; };
 		3CBA7537BB7F38FC1524561F /* ProcessingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingCoordinator.swift; sourceTree = "<group>"; };
 		4E4034F81F65EA2E74A95468 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		53521709823EF727F3BC4F1A /* ProcessingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingTests.swift; sourceTree = "<group>"; };
 		612032FE1770D11BFB654B69 /* ItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailView.swift; sourceTree = "<group>"; };
+		68E4B7C2D9C9EA1EA08FCDF6 /* MigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationTests.swift; sourceTree = "<group>"; };
 		70212394B59DF6266DB0BD4C /* WardrobeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WardrobeTests.swift; sourceTree = "<group>"; };
 		7C9AFA6EF271683379FF6DD7 /* KeychainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainTests.swift; sourceTree = "<group>"; };
 		7DEBDBDD7AE4715986C69428 /* DrapeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrapeApp.swift; sourceTree = "<group>"; };
@@ -166,7 +170,9 @@
 			isa = PBXGroup;
 			children = (
 				7C9AFA6EF271683379FF6DD7 /* KeychainTests.swift */,
+				68E4B7C2D9C9EA1EA08FCDF6 /* MigrationTests.swift */,
 				16D762011967708BD5F6EF78 /* OpenRouterTests.swift */,
+				53521709823EF727F3BC4F1A /* ProcessingTests.swift */,
 				70212394B59DF6266DB0BD4C /* WardrobeTests.swift */,
 				09052ADD4FAB8FA14A6F99EB /* Fixtures */,
 			);
@@ -348,7 +354,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				DE4E22C837A4A9F32EB756A0 /* KeychainTests.swift in Sources */,
+				E27B14213D184E2918F41112 /* MigrationTests.swift in Sources */,
 				C18CC41BCB9656D6BFDCA0E7 /* OpenRouterTests.swift in Sources */,
+				4C4B74C04706ACABF6261E1B /* ProcessingTests.swift in Sources */,
 				111DB3318276A5DEAA043156 /* WardrobeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

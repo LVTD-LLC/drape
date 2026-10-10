@@ -20,22 +20,21 @@ For hosted AI in a private Debug build, run `python3 scripts/configure-developme
 
 ## Use
 
-1. Create your wardrobe. Add a front photo with the camera or photo picker. Back and label photos are optional.
-2. Name or categorize the piece, then save. The app keeps the photos first and attempts on-device background removal and label OCR.
-3. Edit any detail, mark favorites, search by description, and filter or group by clothing type.
-4. Use **Ask AI** on a piece. Settings can also enable **Add and ask AI** and optional studio photos. No customer API key or provider setup is required.
-5. The AI button submits the photos as explained beside it. Review suggestions before saving. A generated studio photo is available for comparison and becomes the catalogue photo only if you enable it.
-6. Select pieces in **Looks** to save an outfit. Export a wardrobe backup to Files and restore it later when moving phones.
+1. Add up to six photos of a piece: a clear whole-item view, other angles, details, and any label.
+2. Tap **Add to wardrobe**. The nearby disclosure explains the upload. Originals save first; details and a studio cover appear automatically as processing finishes.
+3. Swipe through the studio image and original photos. Edit details, mark favorites, search, and filter by clothing type.
+4. **Save photos only** keeps capture local. **Finish preparing** is available on incomplete pieces and sends only the unfinished AI steps; completed pieces have no repeat AI button.
+5. Select pieces in **Looks** to save an outfit. Export a wardrobe backup to Files and restore it later when moving phones.
 
 The app works offline without AI. There is no login, server account, or cross-device sync in v1. Optional device authentication protects the local wardrobe. Local photos may be included in the user's device backup depending on system settings; an explicit export is the portable backup.
 
 ## AI behavior
 
 - Defaults: GPT-6 Luna (`openai/gpt-6-luna`) for analysis and Seedream 5.0 Flash (`bytedance-seed/seedream-5-0-flash`) for studio photos at 1K, 3:4. Existing Gemini defaults are updated once; custom model choices are preserved.
-- Analysis uses `/api/v1/chat/completions` with a strict JSON schema. Unknown label-derived fields stay empty. The app stores suggestions separately from saved user edits.
+- Analysis uses `/api/v1/chat/completions` with a strict JSON schema. Unknown label-derived fields stay empty. Results fill missing details automatically without replacing saved edits.
 - Studio photos use `/api/v1/images` with the original front photo as an input reference. Originals are never replaced. Generative results may change clothing details.
 - Drape manages the model choices on its Python/FastAPI service. See [AI service setup](docs/AI-SERVICE.md) for the private CapRover development deployment and iPhone build configuration.
-- The app sends normalized JPEGs without EXIF/GPS metadata. The OpenRouter key stays on the backend. Tapping Ask AI or Add and ask AI confirms each upload. Analysis requests disallow providers that collect data; image generation follows the selected provider's policy.
+- The app sends normalized JPEGs without EXIF/GPS metadata. The OpenRouter key stays on the backend. Tapping Add to wardrobe or Finish preparing confirms the disclosed upload. Analysis requests disallow providers that collect data; image generation follows the selected provider's policy.
 - No automatic paid retry. Interrupted work is marked for manual retry on next launch. Keep Drape open during processing.
 
 For an explicit paid integration smoke test using the synthetic test image:

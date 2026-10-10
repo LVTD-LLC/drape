@@ -5,60 +5,78 @@ import SwiftData
 @MainActor @Observable final class ProcessingCoordinator {
     private(set) var activeIDs: Set<UUID> = []
     private var tasks: [UUID: Task<Void, Never>] = [:]
+    private let service: any WardrobeAI
+    private let prepare: @Sendable (Data, Data?) async -> LocalPhotoResult
+
+    init(service: any WardrobeAI = OpenRouter.shared,
+         prepare: @escaping @Sendable (Data, Data?) async -> LocalPhotoResult = { await ImageTools.process(front: $0, label: $1) }) {
+        self.service = service
+        self.prepare = prepare
+    }
 
     func start(_ item: Garment, context: ModelContext, configuration: AIConfiguration? = nil) {
         guard !activeIDs.contains(item.id) else { return }
+        // Completed stages are never sent again, including after relaunch or an explicit retry.
+        if configuration != nil && !item.needsAI { return }
         let id = item.id
         activeIDs.insert(id)
         item.processingState = "processing"
-        item.processingMessage = configuration == nil ? "Preparing your photo on this iPhone…" : "Preparing your photo and asking AI…"
+        item.processingMessage = "Preparing your piece…"
         do { try context.save() } catch {
-            item.processingState = "failed"; item.processingMessage = error.localizedDescription
+            item.processingState = "failed"; item.processingMessage = "Couldn’t save your piece. Your photos are still here."
             activeIDs.remove(id); return
         }
-        let front = item.front, back = item.back, label = item.label
+        let front = item.front, label = item.label, photos = item.sourcePhotos
+        let initialDetails = item.details
+        let service = service, prepare = prepare
         tasks[id] = Task { [weak self] in
             defer { self?.activeIDs.remove(id); self?.tasks[id] = nil }
-            let local = await ImageTools.process(front: front, label: label)
+            let local = await prepare(front, label)
             guard !Task.isCancelled, item.modelContext != nil else { return }
             item.cutout = local.cutout ?? item.cutout
             item.labelText = local.labelText
-            item.thumbnail = ImageTools.thumbnail(item.displayPhoto)
+            let localPhoto = item.displayPhoto
+            let localThumbnail = await Task.detached { ImageTools.thumbnail(localPhoto) }.value
+            guard !Task.isCancelled, item.modelContext != nil else { return }
+            item.thumbnail = localThumbnail
             var messages: [String] = []
-            if local.cutout == nil { messages.append("Background cleanup wasn’t available for this photo. Your original is kept.") }
             if let configuration {
-                var photos = [PhotoInput(role: .front, data: front)]
-                if let back { photos.append(PhotoInput(role: .back, data: back)) }
-                if let label { photos.append(PhotoInput(role: .label, data: label)) }
-                do {
-                    let suggestions = try await OpenRouter.shared.analyze(photos: photos, configuration: configuration)
-                    guard !Task.isCancelled, item.modelContext != nil else { return }
-                    item.suggestions = suggestions
-                    item.analysisModel = configuration.analysisModel
-                    try context.save()
-                } catch {
-                    guard !Task.isCancelled else { return }
-                    messages.append(error.localizedDescription)
+                if item.analysisModel == nil {
+                    do {
+                        let details = try await service.analyze(photos: photos.map { PhotoInput(data: $0) }, configuration: configuration)
+                        guard !Task.isCancelled, item.modelContext != nil else { return }
+                        item.details.fillMissing(from: details, unchangedSince: initialDetails)
+                        item.suggestions = nil
+                        item.analysisModel = configuration.analysisModel
+                        try context.save()
+                    } catch {
+                        guard !Task.isCancelled, item.modelContext != nil else { return }
+                        messages.append("Details: " + error.localizedDescription)
+                    }
                 }
-                if configuration.generateStudio {
+                if configuration.generateStudio && item.studio == nil {
                     item.processingMessage = "Creating your studio photo…"
                     do {
-                        let studio = try await OpenRouter.shared.studioPhoto(front: front, configuration: configuration)
+                        let studio = try await service.studioPhoto(front: front, configuration: configuration)
                         guard !Task.isCancelled, item.modelContext != nil else { return }
                         item.studio = studio
+                        item.useStudio = true
                         item.imageModel = configuration.imageModel
-                        // Generated imagery is opt-in after the user has compared it with the original.
                     } catch {
-                        guard !Task.isCancelled else { return }
+                        guard !Task.isCancelled, item.modelContext != nil else { return }
                         messages.append("Studio photo: " + error.localizedDescription)
                     }
                 }
             }
             guard !Task.isCancelled, item.modelContext != nil else { return }
+            let displayPhoto = item.displayPhoto
+            let thumbnail = await Task.detached { ImageTools.thumbnail(displayPhoto) }.value
+            guard !Task.isCancelled, item.modelContext != nil else { return }
+            item.thumbnail = thumbnail
             item.processingState = messages.isEmpty ? "ready" : "attention"
             item.processingMessage = messages.joined(separator: "\n\n")
             do { try context.save() }
-            catch { item.processingState = "failed"; item.processingMessage = "Couldn’t save the result: \(error.localizedDescription)" }
+            catch { item.processingState = "failed"; item.processingMessage = "Couldn’t save the result. Your original photos are kept." }
         }
     }
 
@@ -71,10 +89,28 @@ import SwiftData
     }
     func recoverInterrupted(in context: ModelContext) throws {
         let items = try context.fetch(FetchDescriptor<Garment>())
-        for item in items where item.processingState == "processing" && !activeIDs.contains(item.id) {
-            item.processingState = "attention"
-            item.processingMessage = "Processing was interrupted. Your photos are saved. Tap Prepare photo or Ask AI to try again."
+        for item in items {
+            if item.processingState == "processing" && !activeIDs.contains(item.id) {
+                item.processingState = "attention"
+                item.processingMessage = "Preparation was interrupted. Your photos are saved. You can finish preparing this piece when you’re ready."
+            }
+            // Existing pending suggestions can fill blanks, but never replace saved edits.
+            if let suggestions = item.suggestions {
+                item.details.fillMissing(from: suggestions, unchangedSince: item.details)
+                item.suggestions = nil
+            }
         }
         try context.save()
+    }
+}
+
+extension ItemDetails {
+    mutating func fillMissing(from generated: Self, unchangedSince initial: Self) {
+        for key in [\Self.name, \.subcategory, \.color, \.brand, \.size, \.material, \.pattern, \.season, \.care, \.notes] {
+            if self[keyPath: key] == initial[keyPath: key] && initial[keyPath: key].isEmpty {
+                self[keyPath: key] = generated[keyPath: key]
+            }
+        }
+        if category == initial.category && initial.category == .other { category = generated.category }
     }
 }

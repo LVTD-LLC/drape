@@ -6,42 +6,40 @@ struct ItemDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(ProcessingCoordinator.self) private var processor
-    private let analysisModel = AIModelDefaults.analysis
-    private let imageModel = AIModelDefaults.image
-    @AppStorage("studioEnabled") private var studioEnabled = false
     @State private var editing = false
-    @State private var reviewing = false
     @State private var deleting = false
     @State private var error: String?
-    @State private var selectedPhoto = "Catalogue"
+    @State private var selectedPhoto = 0
     private var busy: Bool { processor.activeIDs.contains(item.id) }
-    private var photoChoices: [String] {
-        ["Catalogue", "Original"] + (item.back == nil ? [] : ["Back"]) + (item.label == nil ? [] : ["Label"]) + (item.studio == nil ? [] : ["Studio"])
+    private var photos: [Data] {
+        [item.studio ?? item.cutout].compactMap { $0 } + item.sourcePhotos
     }
-    private var photo: Data {
-        switch selectedPhoto {
-        case "Original": item.front
-        case "Back": item.back ?? item.front
-        case "Label": item.label ?? item.front
-        case "Studio": item.studio ?? item.front
-        default: item.displayPhoto
-        }
+    private var photoLabel: String {
+        let hasCover = item.studio != nil || item.cutout != nil
+        if hasCover && selectedPhoto == 0 { return item.studio == nil ? "Your piece" : "Studio · AI generated" }
+        return "Original \(selectedPhoto + (hasCover ? 0 : 1))"
     }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                GarmentImage(data: photo).frame(height: 370).clipShape(RoundedRectangle(cornerRadius: 24))
-                ScrollView(.horizontal) {
-                    HStack {
-                        ForEach(photoChoices, id: \.self) { choice in
-                            Button(choice) { selectedPhoto = choice }.buttonStyle(.bordered)
-                                .tint(selectedPhoto == choice ? Style.accent : .secondary)
+                VStack(spacing: 10) {
+                    TabView(selection: $selectedPhoto) {
+                        ForEach(photos.indices, id: \.self) { index in
+                            GarmentImage(data: photos[index]).tag(index)
+                                .accessibilityLabel(index == 0 && item.studio != nil ? "Studio photo" : "Photo \(index + 1)")
                         }
+                    }.tabViewStyle(.page(indexDisplayMode: .never))
+                        .frame(height: 390).clipShape(RoundedRectangle(cornerRadius: 24))
+                        .accessibilityIdentifier("photoCarousel")
+                    Text("\(photoLabel) · \(selectedPhoto + 1) of \(photos.count)")
+                        .font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("photoPosition")
+                    if photos.count > 1 {
+                        HStack(spacing: 6) {
+                            ForEach(photos.indices, id: \.self) { index in
+                                Circle().fill(index == selectedPhoto ? Style.accent : Style.accent.opacity(0.2)).frame(width: 6, height: 6)
+                            }
+                        }.accessibilityHidden(true)
                     }
-                }.scrollIndicators(.hidden)
-                if selectedPhoto == "Studio" || (selectedPhoto == "Catalogue" && item.useStudio) {
-                    Label("AI-generated preview. Compare with the original for accurate details.", systemImage: "sparkles")
-                        .font(.caption).foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     Text(item.displayName).font(Style.title)
@@ -52,21 +50,9 @@ struct ItemDetailView: View {
                     HStack(spacing: 12) { ProgressView(); Text(item.processingMessage).font(.subheadline) }
                     Text("Keep Drape open while it prepares your piece.").font(.caption).foregroundStyle(.secondary)
                 }
-                if item.suggestions != nil {
-                    Button { reviewing = true } label: { Label("Review AI suggestions", systemImage: "sparkles") }.buttonStyle(PrimaryButton())
-                }
                 if !busy && !item.processingMessage.isEmpty {
                     Text(item.processingMessage).font(.footnote).foregroundStyle(.secondary).padding(16)
                         .frame(maxWidth: .infinity, alignment: .leading).background(.background, in: RoundedRectangle(cornerRadius: 16))
-                }
-                if item.studio != nil {
-                    Toggle("Use studio photo in wardrobe", isOn: Binding(get: { item.useStudio }, set: { value in
-                        let old = item.useStudio
-                        item.useStudio = value; item.thumbnail = ImageTools.thumbnail(item.displayPhoto)
-                        do { try context.save() } catch {
-                            item.useStudio = old; item.thumbnail = ImageTools.thumbnail(item.displayPhoto); self.error = error.localizedDescription
-                        }
-                    })).font(.subheadline)
                 }
                 VStack(spacing: 0) {
                     detail("Type", item.details.subcategory.isEmpty ? item.details.category.rawValue : item.details.subcategory)
@@ -81,17 +67,12 @@ struct ItemDetailView: View {
                 if !item.details.notes.isEmpty {
                     VStack(alignment: .leading, spacing: 8) { Text("Notes").font(.headline); Text(item.details.notes).foregroundStyle(.secondary) }
                 }
-                if !item.labelText.isEmpty {
-                    DisclosureGroup("Text from the label") { Text(item.labelText).font(.footnote).textSelection(.enabled).padding(.top, 8) }
-                }
-                HStack {
-                    Button { processor.start(item, context: context) } label: { Label("Prepare photo", systemImage: "photo.badge.checkmark") }
+                if !busy && item.needsAI {
+                    Button("Finish preparing") { processor.start(item, context: context, configuration: .automatic) }
                         .buttonStyle(.bordered)
-                    Button { askAI() } label: { Label("Ask AI", systemImage: "sparkles") }.buttonStyle(.borderedProminent)
-                }.disabled(busy)
-                Text("Prepare photo removes the background on your iPhone when supported. Tapping Ask AI sends this piece’s photos to Drape’s AI providers to suggest details\(studioEnabled ? " and create a studio photo" : ""). Your originals and saved details stay unchanged until you choose what to keep.")
-                    .font(.caption).foregroundStyle(.secondary)
-                if let model = item.analysisModel { Text("Details suggested by \(model)").font(.caption2).foregroundStyle(.tertiary) }
+                    Text("Sends photos to Drape’s AI providers to complete missing details or the studio photo. Completed steps won’t run again.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }.padding(22)
         }.background(Style.canvas)
         .navigationBarTitleDisplayMode(.inline)
@@ -111,14 +92,6 @@ struct ItemDetailView: View {
                 do { try context.save() } catch { item.details = old; throw error }
             }
         }
-        .sheet(isPresented: $reviewing) {
-            if let suggestions = item.suggestions {
-                DetailsEditor(details: suggestions, reviewing: true) { details in
-                    let old = item.details; item.details = details; item.suggestions = nil
-                    do { try context.save() } catch { item.details = old; item.suggestions = suggestions; throw error }
-                }
-            }
-        }
         .confirmationDialog("Delete this piece and its photos?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete piece", role: .destructive) { delete() }
         } message: { Text("It will also be removed from your looks. This cannot be undone.") }
@@ -132,10 +105,6 @@ struct ItemDetailView: View {
             }.font(.subheadline).padding(.vertical, 12)
         }
     }
-    private func askAI() {
-        processor.start(item, context: context, configuration: AIConfiguration(analysisModel: analysisModel, imageModel: imageModel, generateStudio: studioEnabled))
-    }
-
     private func delete() {
         processor.cancel(item.id)
         do {

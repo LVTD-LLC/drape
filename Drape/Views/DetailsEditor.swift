@@ -26,22 +26,14 @@ struct DetailsFields: View {
 struct DetailsEditor: View {
     @Environment(\.dismiss) private var dismiss
     @State var details: ItemDetails
-    var reviewing = false
     let onSave: (ItemDetails) throws -> Void
     @State private var error: String?
     var body: some View {
         NavigationStack {
             Form {
-                if reviewing {
-                    Section {
-                        Label("A starting point, checked by you.", systemImage: "sparkles").font(.headline)
-                        Text("Review every detail before saving. Empty fields mean the model couldn’t tell. Your current details will be replaced with the values below.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
-                }
                 DetailsFields(details: $details)
             }
-            .navigationTitle(reviewing ? "Review suggestions" : "Edit piece").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Edit piece").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Save") {
