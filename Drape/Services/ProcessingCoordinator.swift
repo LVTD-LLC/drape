@@ -105,6 +105,13 @@ import SwiftData
 }
 
 extension ItemDetails {
+    mutating func applyEdits(_ edited: Self, comparedTo baseline: Self) {
+        for key in [\Self.name, \.subcategory, \.color, \.brand, \.size, \.material, \.pattern, \.season, \.care, \.notes] {
+            if edited[keyPath: key] != baseline[keyPath: key] { self[keyPath: key] = edited[keyPath: key] }
+        }
+        if edited.category != baseline.category { category = edited.category }
+    }
+
     mutating func fillMissing(from generated: Self, unchangedSince initial: Self) {
         for key in [\Self.name, \.subcategory, \.color, \.brand, \.size, \.material, \.pattern, \.season, \.care, \.notes] {
             if self[keyPath: key] == initial[keyPath: key] && initial[keyPath: key].isEmpty {

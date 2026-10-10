@@ -7,6 +7,7 @@ struct ItemDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ProcessingCoordinator.self) private var processor
     @State private var editing = false
+    @State private var editBaseline = ItemDetails.empty
     @State private var deleting = false
     @State private var error: String?
     @State private var selectedPhoto = 0
@@ -82,13 +83,14 @@ struct ItemDetailView: View {
                 do { try context.save() } catch { item.isFavorite.toggle(); self.error = error.localizedDescription }
             } }
             ToolbarItem(placement: .topBarTrailing) { Menu {
-                Button("Edit details", systemImage: "pencil") { editing = true }.accessibilityIdentifier("editDetails")
+                Button("Edit details", systemImage: "pencil") { editBaseline = item.details; editing = true }.accessibilityIdentifier("editDetails")
                 Button("Delete piece", systemImage: "trash", role: .destructive) { deleting = true }
             } label: { Image(systemName: "ellipsis") }.accessibilityLabel("Piece options") }
         }
         .sheet(isPresented: $editing) {
-            DetailsEditor(details: item.details) { details in
-                let old = item.details; item.details = details
+            DetailsEditor(details: editBaseline) { details in
+                let old = item.details
+                item.details.applyEdits(details, comparedTo: editBaseline)
                 do { try context.save() } catch { item.details = old; throw error }
             }
         }

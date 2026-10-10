@@ -77,6 +77,18 @@ private actor TestWardrobeAI: WardrobeAI {
         counts = await service.counts(); XCTAssertEqual(counts, [1, 2])
         XCTAssertEqual(item.details.name, "Edited name"); XCTAssertEqual(item.displayPhoto, photo)
     }
+    func testSavingAnEditorOpenedBeforeAICompletesKeepsNewDetails() {
+        let baseline = ItemDetails.empty
+        var current = baseline; current.name = "AI shirt"; current.color = "Blue"; current.category = .tops
+        var edited = baseline; edited.name = "My name"
+        current.applyEdits(edited, comparedTo: baseline)
+        XCTAssertEqual(current.name, "My name")
+        XCTAssertEqual(current.color, "Blue"); XCTAssertEqual(current.category, .tops)
+        let nextBaseline = current
+        edited = current; edited.color = ""
+        current.applyEdits(edited, comparedTo: nextBaseline)
+        XCTAssertEqual(current.color, "")
+    }
     func testPhotosOnlyDoesNotContactAI() async throws {
         let context = try context(), photo = DemoData.photo(color: .brown, symbol: "tshirt")
         let service = TestWardrobeAI(photo: photo)
