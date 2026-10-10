@@ -5,8 +5,6 @@ import LocalAuthentication
 struct SettingsView: View {
     @Environment(\.modelContext) private var context
     @Environment(ProcessingCoordinator.self) private var processor
-    @AppStorage("aiEnabled") private var aiEnabled = false
-    @AppStorage("studioEnabled") private var studioEnabled = false
     @AppStorage("lockEnabled") private var lockEnabled = false
     @State private var error: String?
     @State private var notice: String?
@@ -25,12 +23,6 @@ struct SettingsView: View {
                         Text("Make it yours.").font(.system(.title, design: .serif))
                         Text("A thoughtful home for your wardrobe.").font(.subheadline).foregroundStyle(.secondary)
                     }.padding(.vertical, 8)
-                }
-                Section {
-                    Toggle("Suggest details when adding", isOn: $aiEnabled)
-                    Toggle("Generate studio photos", isOn: $studioEnabled)
-                } header: { Text("AI assistant") } footer: {
-                    Text("AI is ready when you need it, with no API key to set up. Tap Ask AI on a piece, or Add and ask AI when saving a new piece, to send its photos for suggestions. You choose what to keep.")
                 }
                 Section {
                     Toggle("Require Face ID or passcode", isOn: Binding(get: { lockEnabled }, set: { enabled in
@@ -112,11 +104,9 @@ struct SettingsView: View {
     private func deleteAll() {
         do {
             try Keychain.save("")
-            aiEnabled = false; studioEnabled = false
             for look in try context.fetch(FetchDescriptor<Look>()) { context.delete(look) }
             for item in try context.fetch(FetchDescriptor<Garment>()) { context.delete(item) }
             try context.save()
-            aiEnabled = false; studioEnabled = false
             notice = "Your wardrobe has been deleted."
         } catch { context.rollback(); self.error = error.localizedDescription }
     }
@@ -129,13 +119,13 @@ struct PrivacyView: View {
                 Text("Drape stores clothing photos, details, and looks in its private app storage. Background removal and label text recognition run on the device. There is no Drape account or cross-device sync in this version.")
                 Text("Photos are resized and re-encoded before saving, removing location metadata.")
             }
-            Section("When you ask AI") {
-                Text("When you tap Ask AI or Add and ask AI, selected clothing photos are sent through Drape’s AI service to OpenRouter and its model providers. They may process or retain requests under their own policies. Drape does not send your name, Apple account, or location. We request providers that disallow data collection for clothing analysis; image generation is subject to the selected provider’s policy.")
+            Section("When you add a piece") {
+                Text("When you tap Add to wardrobe or Finish preparing, selected clothing photos are sent through Drape’s AI service to OpenRouter and its model providers. They may process or retain requests under their own policies. Drape does not send your name, Apple account, or location. We request providers that disallow data collection for clothing analysis; image generation is subject to the selected provider’s policy.")
                 Link("OpenRouter privacy policy", destination: URL(string: "https://openrouter.ai/privacy")!)
                 Text("AI can be wrong. Size, materials, and care should be checked against your label. Generated photos may change details; compare them with your original before using them.")
             }
             Section("You’re in control") {
-                Text("You can use Drape without AI, export a copy of your wardrobe, or delete all local data in Settings. Deleting Drape removes its local wardrobe. Files you exported and requests already sent to providers are not deleted by removing local data.")
+                Text("Choose Save photos only to use Drape without AI, export a copy of your wardrobe, or delete all local data in Settings. Deleting Drape removes its local wardrobe. Files you exported and requests already sent to providers are not deleted by removing local data.")
                 Text("Drape has no advertising or analytics SDKs. Backups saved to Files may sync through your chosen cloud provider. The optional lock uses Apple’s device authentication; Drape never receives your Face ID data.")
             }
         }.navigationTitle("Privacy").navigationBarTitleDisplayMode(.inline)

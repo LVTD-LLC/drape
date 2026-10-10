@@ -12,7 +12,7 @@ The optional app lock uses Apple's device authentication. Drape does not receive
 
 ## Optional AI
 
-When you tap Ask AI or Add and ask AI, Drape sends the selected clothing photos through its AI service to OpenRouter and its model providers. The adjacent disclosure explains each upload. The service forwards photos in memory without storing a wardrobe copy. Photos are used to suggest clothing details and, if you enable it, create a studio-style image. The providers' terms, retention, and privacy policies apply. See [OpenRouter's privacy policy](https://openrouter.ai/privacy) and the selected model provider's policy. Requests already sent to providers cannot be recalled by deleting local app data.
+When you tap Add to wardrobe or Finish preparing, Drape sends the selected clothing photos through its AI service to OpenRouter and its model providers. The adjacent disclosure explains each upload. The service forwards photos in memory without storing a wardrobe copy. Photos are used to suggest clothing details and, if you enable it, create a studio-style image. The providers' terms, retention, and privacy policies apply. See [OpenRouter's privacy policy](https://openrouter.ai/privacy) and the selected model provider's policy. Requests already sent to providers cannot be recalled by deleting local app data.
 
 Drape manages the OpenRouter credentials on its server. Users do not supply an API key. Private development builds use a separate development access credential; this is not the public-release authentication design. Drape does not send your name, Apple account identifier, or photo location metadata with AI requests. The gateway receives network information needed to serve the request, including the connecting IP address.
 

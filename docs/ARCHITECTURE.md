@@ -2,15 +2,15 @@
 
 ## First release
 
-Drape is an iPhone app with a local SwiftData store. A garment owns normalized front, optional back and label images, an optional on-device cutout, an optional generated studio image, and structured metadata. Large image data uses SwiftData external storage. A small thumbnail serves grids. Stable UUIDs identify garments and looks; deleting a garment removes its UUID from every look.
+Drape is an iPhone app with a local SwiftData store. A garment owns a normalized whole-piece image, optional additional angles and label images, an optional on-device cutout, an optional generated studio image, and structured metadata. Large image data uses SwiftData external storage. A small thumbnail serves grids. Stable UUIDs identify garments and looks; deleting a garment removes its UUID from every look.
 
-Photos are decoded to a maximum 1,800 pixels before storage. Re-encoding removes EXIF/location metadata. Vision runs in a detached task rather than blocking SwiftUI. Model instances remain on the main actor. The processing coordinator owns tasks independently of detail screen presentation and prevents concurrent processing of the same garment. It saves the source before work, marks interrupted work for explicit retry, checks cancellation/deletion before applying results, and saves analysis before attempting the optional image request. No paid request is automatically repeated.
+Photos are decoded to a maximum 1,800 pixels before storage. Re-encoding removes EXIF/location metadata. Vision runs in a detached task rather than blocking SwiftUI. Model instances remain on the main actor. The processing coordinator owns tasks independently of detail screen presentation and prevents concurrent processing of the same garment. It saves the source before work, marks interrupted work for explicit completion, checks cancellation/deletion before applying results, and saves analysis before attempting the optional image request. No paid request is automatically repeated.
 
-AI suggestions do not overwrite user metadata. Applying reviewed suggestions is explicit. Studio photos remain previews until selected. Device cleanup may fail when a subject cannot be isolated or Vision resources are unavailable; the original remains usable. OCR text is exposed as reference text, not guessed size/care metadata.
+AI results fill missing metadata automatically, preserving saved values and edits made during processing. New studio photos become the cover automatically; originals remain available in the carousel. Device cleanup may fail when a subject cannot be isolated or Vision resources are unavailable; the original remains usable. OCR text is exposed as reference text, not guessed size/care metadata.
 
 AI calls use the private Python/FastAPI gateway on CapRover, which holds the operator's OpenRouter key. The app never reads that key. An ignored Debug-only xcconfig supplies the HTTPS gateway address and a separate revocable development bearer token. That token is extractable from private development builds and is not public-release authentication. Release builds have no enabled gateway or development token. No account database, cloud wardrobe storage, analytics SDK, or advertising SDK is added. See [AI service](AI-SERVICE.md) for deployment, limits, and the required public-authentication follow-up. PhotosPicker requests access only to selected images. Camera access is requested when the user selects Camera. Optional Face ID/device-passcode protection covers the UI when the scene is inactive and locks on background entry.
 
-SwiftData's initial schema is version 1 in practice; before any shipping schema changes, introduce explicit VersionedSchema and SchemaMigrationPlan using this exact model layout as the initial version. Backup format is independently versioned, validates images and IDs, and merges missing objects transactionally. The 100 MB import/export limit is an explicit v1 constraint; large libraries should move to a streaming archive format before increasing this limit.
+SwiftData uses an explicit V1-to-V2 migration plan; the original model layout is retained as WardrobeSchemaV1. Backup format is independently versioned, validates images and IDs, and merges missing objects transactionally. The 100 MB import/export limit is an explicit v1 constraint; large libraries should move to a streaming archive format before increasing this limit.
 
 ## Cloud storage later
 
@@ -24,7 +24,7 @@ An Apple-only alternative is CloudKit with the user's iCloud account. Evaluate s
 - Imagery: `/images`, one reference front photo, one output, faithful garment preservation prompt. Generation cannot guarantee exact fidelity; original comparison is part of the product.
 - Failure: safe HTTP status descriptions; no raw provider response in user alerts; no authorization/request payload logging.
 - Model selection: Drape owns fixed analysis and image choices; the gateway validates models and request limits. Provider errors are redacted and recoverable.
-- Upload confirmation: the disclosed Ask AI or Add and ask AI action submits photos directly; no second modal or customer provider setup.
+- Upload confirmation: the disclosed Add to wardrobe or Finish preparing action submits photos directly; no second modal or customer provider setup.
 
 ## Reference documentation
 
@@ -34,3 +34,11 @@ An Apple-only alternative is CloudKit with the user's iCloud account. Evaluate s
 - [Vision foreground masks](https://developer.apple.com/documentation/vision/vngenerateforegroundinstancemaskrequest)
 - [OpenRouter structured output](https://openrouter.ai/docs/guides/features/structured-outputs)
 - [OpenRouter image generation](https://openrouter.ai/docs/guides/overview/multimodal/image-generation)
+
+## Capture update: version 1 to version 2
+
+`WardrobeSchemaV1` freezes the original Garment and Look properties and types, including external photo storage. `WardrobeMigrationPlan` uses a lightweight migration to V2, adding only nullable `extraPhotoData` (a JSON-encoded array of normalized photo bytes). Existing front, back, label, cutout, studio, details, UUIDs, favorites, and look membership are unchanged. A missing extra-photo field means no extra photos. The app opens the existing store with this plan; it never recreates a failed store. Migration tests reopen a file-backed V1 store in V2 and compare all photo bytes and metadata.
+
+New capture stores the whole-piece photo in `front` and up to five additional angles or labels in `extraPhotoData`. Existing role-based photos remain in their original fields. Backup format V2 includes additional photos; the reader still accepts V1 backups. V1 readers reject V2 archives rather than silently discarding photos.
+
+Add to wardrobe now explicitly discloses and starts analysis plus studio generation. Details fill automatically, preserving existing nonempty values and any edits made during processing; studio generation selects the new image as the cover. The detail screen uses a paged photo carousel, with originals retained. Save photos only remains available offline. Finish preparing is shown only for incomplete items, discloses uploads, and skips successful stages. There are no automatic paid retries or regeneration controls for completed pieces. Pending suggestions from older builds fill only empty fields at startup; previously saved edits and existing cover selections are retained.
