@@ -1,3 +1,16 @@
+# Richer item details — 11 October 2026
+
+- Signed Drape simulator scheme on iPhone 17 Pro / iOS 26.5: **31 unit and 5 UI tests passed**, with the paid integration test skipped in the normal suite. Latest result, including the no-rerun follow-up: `/tmp/drape-no-rerun-tests.xcresult`.
+- Coverage includes file-backed V1/V2 → V3 migrations, reopening stores, exact original/generated photo preservation, backup V3 restoration and V1/V2 import, normalized tags and combined filters, currency-aware sorting, evidence validation, edits during AI work, and prevention of repeat AI requests for completed items with missing attributes.
+- UI verification entered and saved tags and an original price, checked deduplication, filtered by a tag, and cleared the filter. The first runs exposed test selectors that resolved off-screen fields too early and tapped outside the actual switch; corrected selectors passed. Existing capture, edit/delete, looks, search, and privacy flows also passed.
+- `scripts/test-live-gateway.py --analysis-only --confirm-paid-requests` passed against the deployed production gateway using the synthetic cardigan through the actual iOS URLSession client. Exactly one analysis request, zero studio requests, no retry. The richer response decoded with tags; unsupported brand/size/care and original price remained unknown. This validates the contract, not condition accuracy or receipt OCR across real garments.
+- Signed Debug device build installed and launched on TataD (iPhone 14 Pro / iOS 17.6.1). Fresh private before/after backups confirmed all **3 garments**, all **38 original garment data columns**, and **11 external photo files** were identical after migration. V3's nullable attributes column was present and empty for existing items. The app relaunched successfully.
+- Device backups and checksums remain outside the repository under `~/Library/Application Support/Drape/device-installs/2026-10-11-rich-details/`. No personal photo was uploaded for this verification. The subsequent no-rerun change removes enrichment controls; missing fields on completed records can be edited manually.
+- The no-rerun follow-up was installed and launched on TataD. Fresh before/after comparisons preserved all three items and 11 external photo files; evidence is under `~/Library/Application Support/Drape/device-installs/2026-10-11-no-rerun/`. No paid AI requests were made for this follow-up.
+- Broader physical-device camera/Face ID/accessibility checks and real-world condition/price extraction accuracy remain release checks. No TestFlight submission or production backend change was made for this feature.
+
+---
+
 # Rust migration verification — 11 October 2026
 
 - ShipRust generated all available features, template `386e5df`; provenance retained in `web/.shiprust.toml`.

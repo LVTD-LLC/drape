@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		111DB3318276A5DEAA043156 /* WardrobeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70212394B59DF6266DB0BD4C /* WardrobeTests.swift */; };
 		116362958E1A3AD6CB45F8DD /* Wardrobe.swift in Sources */ = {isa = PBXBuildFile; fileRef = A886D9FAE40165D253490BFD /* Wardrobe.swift */; };
+		1822788EEB39E7841385F928 /* ItemAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48532A0C3FCCF5C063E4A01A /* ItemAttributes.swift */; };
 		1FA9F719138DF2B21CF40170 /* AddItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BF0BC37434079EED64802F2 /* AddItemView.swift */; };
 		2A85B353EBA1BB9BE5C4226C /* DetailsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 254723F6887F8F79ACD2F16D /* DetailsEditor.swift */; };
 		356C61647FB1B47DFBD616CA /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4034F81F65EA2E74A95468 /* Keychain.swift */; };
@@ -22,6 +23,7 @@
 		73C0E39FB8A591A2F17E65D2 /* cardigan-source.png in Resources */ = {isa = PBXBuildFile; fileRef = 1CC53C0681B0EDE94B22AFC1 /* cardigan-source.png */; };
 		8A7EE894044D8A0E9490C4BD /* OpenRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CD0D5B219ABD4B6E8797670 /* OpenRouter.swift */; };
 		90C23684D84622C54F7295BA /* LiveGatewayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFC4B2E2A600308EDEC290F4 /* LiveGatewayTests.swift */; };
+		B344248D23527DA1C9FD2663 /* ItemAttributesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 571C191AD5C5F536A004C27E /* ItemAttributesTests.swift */; };
 		C01F7649F51502E4F3AEB73A /* DrapeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3794349721D4711DD47CB5 /* DrapeUITests.swift */; };
 		C18CC41BCB9656D6BFDCA0E7 /* OpenRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16D762011967708BD5F6EF78 /* OpenRouterTests.swift */; };
 		C2A58D2E5668E02578308C9A /* WardrobeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A06A08F5A89783F81A22AD12 /* WardrobeView.swift */; };
@@ -63,8 +65,10 @@
 		2EACDCA6693E14C9FEACC2BF /* ImageTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTools.swift; sourceTree = "<group>"; };
 		3C3794349721D4711DD47CB5 /* DrapeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrapeUITests.swift; sourceTree = "<group>"; };
 		3CBA7537BB7F38FC1524561F /* ProcessingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingCoordinator.swift; sourceTree = "<group>"; };
+		48532A0C3FCCF5C063E4A01A /* ItemAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemAttributes.swift; sourceTree = "<group>"; };
 		4E4034F81F65EA2E74A95468 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		53521709823EF727F3BC4F1A /* ProcessingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingTests.swift; sourceTree = "<group>"; };
+		571C191AD5C5F536A004C27E /* ItemAttributesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemAttributesTests.swift; sourceTree = "<group>"; };
 		612032FE1770D11BFB654B69 /* ItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailView.swift; sourceTree = "<group>"; };
 		68E4B7C2D9C9EA1EA08FCDF6 /* MigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationTests.swift; sourceTree = "<group>"; };
 		70212394B59DF6266DB0BD4C /* WardrobeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WardrobeTests.swift; sourceTree = "<group>"; };
@@ -109,6 +113,7 @@
 		38C81CED42520BE8A21C7F45 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				48532A0C3FCCF5C063E4A01A /* ItemAttributes.swift */,
 				A886D9FAE40165D253490BFD /* Wardrobe.swift */,
 			);
 			path = Models;
@@ -171,6 +176,7 @@
 		92970CA6E91BA8A59B8A1582 /* DrapeTests */ = {
 			isa = PBXGroup;
 			children = (
+				571C191AD5C5F536A004C27E /* ItemAttributesTests.swift */,
 				7C9AFA6EF271683379FF6DD7 /* KeychainTests.swift */,
 				BFC4B2E2A600308EDEC290F4 /* LiveGatewayTests.swift */,
 				68E4B7C2D9C9EA1EA08FCDF6 /* MigrationTests.swift */,
@@ -339,6 +345,7 @@
 				2A85B353EBA1BB9BE5C4226C /* DetailsEditor.swift in Sources */,
 				5599EA134F26DE446416B1C3 /* DrapeApp.swift in Sources */,
 				3D3A360DF9565D0F086F77F5 /* ImageTools.swift in Sources */,
+				1822788EEB39E7841385F928 /* ItemAttributes.swift in Sources */,
 				55E48C88CDEB762B616A5A44 /* ItemDetailView.swift in Sources */,
 				356C61647FB1B47DFBD616CA /* Keychain.swift in Sources */,
 				62C30DD4DEDDF20D0B8A5158 /* LooksView.swift in Sources */,
@@ -356,6 +363,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B344248D23527DA1C9FD2663 /* ItemAttributesTests.swift in Sources */,
 				DE4E22C837A4A9F32EB756A0 /* KeychainTests.swift in Sources */,
 				90C23684D84622C54F7295BA /* LiveGatewayTests.swift in Sources */,
 				E27B14213D184E2918F41112 /* MigrationTests.swift in Sources */,

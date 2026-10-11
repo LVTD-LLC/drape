@@ -8,6 +8,7 @@ struct ItemDetailView: View {
     @Environment(ProcessingCoordinator.self) private var processor
     @State private var editing = false
     @State private var editBaseline = ItemDetails.empty
+    @State private var attributeBaseline = ItemAttributes.empty
     @State private var deleting = false
     @State private var error: String?
     @State private var selectedPhoto = 0
@@ -56,7 +57,9 @@ struct ItemDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .leading).background(.background, in: RoundedRectangle(cornerRadius: 16))
                 }
                 VStack(spacing: 0) {
-                    detail("Type", item.details.subcategory.isEmpty ? item.details.category.rawValue : item.details.subcategory)
+                    detail("Category", item.details.category.rawValue)
+                    detail("Type", ItemTaxonomy.type(for: item.details))
+                    detail("Style", item.attributes.typeDetail)
                     detail("Color", item.details.color)
                     detail("Brand", item.details.brand)
                     detail("Size", item.details.size)
@@ -65,6 +68,31 @@ struct ItemDetailView: View {
                     detail("Season", item.details.season)
                     detail("Care", item.details.care)
                 }.padding(.horizontal, 16).background(.background, in: RoundedRectangle(cornerRadius: 18))
+                if !item.attributes.tags.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Tags").font(.headline)
+                        Text(item.attributes.tags.joined(separator: " · ")).foregroundStyle(.secondary)
+                            .accessibilityIdentifier("itemTags")
+                    }
+                }
+                if let price = item.attributes.originalPrice {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Original price").font(.headline)
+                        Text(price.formatted).accessibilityIdentifier("itemPrice")
+                        Text(price.source == .photo ? "Read from photo: \(price.evidence)" : "Entered by you")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if let condition = item.attributes.condition {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Condition").font(.headline)
+                        Text(condition.label).accessibilityIdentifier("itemCondition")
+                        if !condition.evidence.isEmpty { Text(condition.evidence).font(.subheadline).foregroundStyle(.secondary) }
+                        if condition.source == .photo {
+                            Text("Based on visible photos; hidden wear and functionality aren’t assessed.").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
                 if !item.details.notes.isEmpty {
                     VStack(alignment: .leading, spacing: 8) { Text("Notes").font(.headline); Text(item.details.notes).foregroundStyle(.secondary) }
                 }
@@ -83,15 +111,19 @@ struct ItemDetailView: View {
                 do { try context.save() } catch { item.isFavorite.toggle(); self.error = error.localizedDescription }
             } }
             ToolbarItem(placement: .topBarTrailing) { Menu {
-                Button("Edit details", systemImage: "pencil") { editBaseline = item.details; editing = true }.accessibilityIdentifier("editDetails")
+                Button("Edit details", systemImage: "pencil") { editBaseline = item.details; attributeBaseline = item.attributes; editing = true }.accessibilityIdentifier("editDetails")
                 Button("Delete piece", systemImage: "trash", role: .destructive) { deleting = true }
             } label: { Image(systemName: "ellipsis") }.accessibilityLabel("Piece options") }
         }
         .sheet(isPresented: $editing) {
-            DetailsEditor(details: editBaseline) { details in
+            DetailsEditor(details: editBaseline, attributes: attributeBaseline) { details, attributes in
                 let old = item.details
+                let oldAttributes = item.attributesData
                 item.details.applyEdits(details, comparedTo: editBaseline)
-                do { try context.save() } catch { item.details = old; throw error }
+                var merged = item.attributes
+                merged.applyEdits(attributes, comparedTo: attributeBaseline, categoryChanged: details.category != editBaseline.category)
+                do { try item.setAttributes(merged); try context.save() }
+                catch { item.details = old; item.attributesData = oldAttributes; throw error }
             }
         }
         .confirmationDialog("Delete this piece and its photos?", isPresented: $deleting, titleVisibility: .visible) {

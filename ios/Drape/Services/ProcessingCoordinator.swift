@@ -16,7 +16,7 @@ import SwiftData
 
     func start(_ item: Garment, context: ModelContext, configuration: AIConfiguration? = nil) {
         guard !activeIDs.contains(item.id) else { return }
-        // Completed stages are never sent again, including after relaunch or an explicit retry.
+        // Completed stages cannot be repeated, even when optional metadata is missing.
         if configuration != nil && !item.needsAI { return }
         let id = item.id
         activeIDs.insert(id)
@@ -28,6 +28,7 @@ import SwiftData
         }
         let front = item.front, label = item.label, photos = item.sourcePhotos
         let initialDetails = item.details
+        let initialAttributes = item.attributes
         let service = service, prepare = prepare
         tasks[id] = Task { [weak self] in
             defer { self?.activeIDs.remove(id); self?.tasks[id] = nil }
@@ -43,9 +44,17 @@ import SwiftData
             if let configuration {
                 if item.analysisModel == nil {
                     do {
-                        let details = try await service.analyze(photos: photos.map { PhotoInput(data: $0) }, configuration: configuration)
+                        let analysis = try await service.analyze(photos: photos.map { PhotoInput(data: $0) }, configuration: configuration)
                         guard !Task.isCancelled, item.modelContext != nil else { return }
-                        item.details.fillMissing(from: details, unchangedSince: initialDetails)
+                        item.details.fillMissing(from: analysis.details, unchangedSince: initialDetails)
+                        var generated = analysis.attributes
+                        if item.details.category != analysis.details.category ||
+                            (item.details.subcategory != initialDetails.subcategory && item.details.subcategory != analysis.details.subcategory) {
+                            generated.typeDetail = ""
+                        }
+                        var attributes = item.attributes
+                        attributes.fillMissing(from: generated, unchangedSince: initialAttributes)
+                        try item.setAttributes(attributes)
                         item.suggestions = nil
                         item.analysisModel = configuration.analysisModel
                         try context.save()
@@ -106,18 +115,22 @@ import SwiftData
 
 extension ItemDetails {
     mutating func applyEdits(_ edited: Self, comparedTo baseline: Self) {
-        for key in [\Self.name, \.subcategory, \.color, \.brand, \.size, \.material, \.pattern, \.season, \.care, \.notes] {
+        for key in [\Self.name, \.color, \.brand, \.size, \.material, \.pattern, \.season, \.care, \.notes] {
             if edited[keyPath: key] != baseline[keyPath: key] { self[keyPath: key] = edited[keyPath: key] }
         }
-        if edited.category != baseline.category { category = edited.category }
+        if edited.category != baseline.category { category = edited.category; subcategory = edited.subcategory }
+        else if edited.subcategory != baseline.subcategory { subcategory = edited.subcategory }
     }
 
     mutating func fillMissing(from generated: Self, unchangedSince initial: Self) {
-        for key in [\Self.name, \.subcategory, \.color, \.brand, \.size, \.material, \.pattern, \.season, \.care, \.notes] {
+        for key in [\Self.name, \.color, \.brand, \.size, \.material, \.pattern, \.season, \.care, \.notes] {
             if self[keyPath: key] == initial[keyPath: key] && initial[keyPath: key].isEmpty {
                 self[keyPath: key] = generated[keyPath: key]
             }
         }
         if category == initial.category && initial.category == .other { category = generated.category }
+        if category == generated.category && subcategory == initial.subcategory && initial.subcategory.isEmpty {
+            subcategory = generated.subcategory
+        }
     }
 }

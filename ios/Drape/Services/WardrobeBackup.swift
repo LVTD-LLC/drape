@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 import ImageIO
 
 struct WardrobeArchive: Codable, Sendable {
-    var version = 2
+    var version = 3
     var exportedAt = Date()
     var items: [ArchivedItem]
     var looks: [ArchivedLook]
@@ -24,6 +24,7 @@ struct WardrobeArchive: Codable, Sendable {
         var extraPhotos: [Data]? = nil
         var analysisModel: String? = nil
         var imageModel: String? = nil
+        var attributes: ItemAttributes? = nil
     }
     struct ArchivedLook: Codable, Sendable {
         let id: UUID
@@ -36,11 +37,12 @@ struct WardrobeArchive: Codable, Sendable {
     static func decode(_ data: Data) throws -> Self {
         guard data.count <= 100_000_000 else { throw BackupError.tooLarge }
         let archive = try JSONDecoder().decode(Self.self, from: data)
-        guard (1...2).contains(archive.version) else { throw BackupError.unsupportedVersion }
+        guard (1...3).contains(archive.version) else { throw BackupError.unsupportedVersion }
         guard archive.items.count <= 2000, archive.looks.count <= 2000 else { throw BackupError.tooLarge }
         guard Set(archive.items.map(\.id)).count == archive.items.count,
               Set(archive.looks.map(\.id)).count == archive.looks.count else { throw BackupError.invalid }
         for item in archive.items {
+            _ = try item.attributes?.validated()
             guard 1 + (item.back == nil ? 0 : 1) + (item.label == nil ? 0 : 1) + (item.extraPhotos?.count ?? 0) <= 6 else { throw BackupError.invalid }
             for data in [item.front, item.back, item.label, item.cutout, item.studio].compactMap({ $0 }) + (item.extraPhotos ?? []) {
                 guard data.count < 10_000_000, let source = CGImageSourceCreateWithData(data as CFData, nil),
@@ -57,7 +59,7 @@ struct WardrobeArchive: Codable, Sendable {
     @MainActor static func make(context: ModelContext) throws -> Self {
         let items = try context.fetch(FetchDescriptor<Garment>()).map {
             ArchivedItem(id: $0.id, createdAt: $0.createdAt, details: $0.details, isFavorite: $0.isFavorite,
-                         front: $0.front, back: $0.back, label: $0.label, cutout: $0.cutout, studio: $0.studio, useStudio: $0.useStudio, extraPhotos: $0.extraPhotos, analysisModel: $0.analysisModel, imageModel: $0.imageModel)
+                         front: $0.front, back: $0.back, label: $0.label, cutout: $0.cutout, studio: $0.studio, useStudio: $0.useStudio, extraPhotos: $0.extraPhotos, analysisModel: $0.analysisModel, imageModel: $0.imageModel, attributes: $0.attributes)
         }
         let looks = try context.fetch(FetchDescriptor<Look>()).map {
             ArchivedLook(id: $0.id, name: $0.name, notes: $0.notes, createdAt: $0.createdAt, garmentIDs: $0.garmentIDs)
@@ -73,6 +75,7 @@ struct WardrobeArchive: Codable, Sendable {
         do {
             for record in items where !existing.contains(record.id) {
                 let item = Garment(front: record.front, back: record.back, label: record.label, details: record.details)
+                try item.setAttributes(record.attributes ?? .empty)
                 item.id = record.id; item.createdAt = record.createdAt; item.isFavorite = record.isFavorite
                 try item.setExtraPhotos(record.extraPhotos ?? [])
                 item.analysisModel = record.analysisModel; item.imageModel = record.imageModel

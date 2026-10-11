@@ -11,10 +11,10 @@ private actor TestWardrobeAI: WardrobeAI {
     init(photo: Data, failStudio: Bool = false) { self.photo = photo; self.failStudio = failStudio }
     func allowStudio() { failStudio = false }
     func counts() -> [Int] { [analysisCalls, studioCalls] }
-    func analyze(photos: [PhotoInput], configuration: AIConfiguration) async throws -> ItemDetails {
+    func analyze(photos: [PhotoInput], configuration: AIConfiguration) async throws -> ItemAnalysis {
         analysisCalls += 1; receivedPhotos = photos.map(\.data)
         var details = ItemDetails(); details.name = "AI shirt"; details.category = .tops; details.color = "Blue"
-        return details
+        return ItemAnalysis(details: details, attributes: ItemAttributes(typeDetail: "Crew neck", tags: ["casual"]))
     }
     func studioPhoto(front: Data, configuration: AIConfiguration) async throws -> Data {
         studioCalls += 1
@@ -98,5 +98,24 @@ private actor TestWardrobeAI: WardrobeAI {
         try await wait(processor)
         let counts = await service.counts(); XCTAssertEqual(counts, [0, 0])
         XCTAssertEqual(item.processingState, "ready"); XCTAssertEqual(item.front, photo)
+    }
+
+    func testCompletedItemWithMissingAttributesCannotRunAIAgain() async throws {
+        let context = try context(), photo = DemoData.photo(color: .brown, symbol: "tshirt")
+        let service = TestWardrobeAI(photo: photo)
+        let processor = ProcessingCoordinator(service: service, prepare: { _, _ in
+            XCTFail("A completed item must not reprocess photos")
+            return LocalPhotoResult(cutout: nil, labelText: "")
+        })
+        let item = Garment(front: photo); item.details.name = "My edited shirt"
+        item.studio = Data([1, 2, 3]); item.analysisModel = AIModelDefaults.analysis; item.imageModel = AIModelDefaults.image
+        item.processingState = "ready"
+        context.insert(item); try context.save()
+        processor.start(item, context: context, configuration: .automatic)
+        try await wait(processor)
+        let counts = await service.counts(), received = await service.receivedPhotos
+        XCTAssertEqual(counts, [0, 0]); XCTAssertTrue(received.isEmpty)
+        XCTAssertEqual(item.details.name, "My edited shirt"); XCTAssertEqual(item.attributes, .empty)
+        XCTAssertEqual(item.processingState, "ready"); XCTAssertEqual(item.studio, Data([1, 2, 3]))
     }
 }

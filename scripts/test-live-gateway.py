@@ -8,7 +8,8 @@ import subprocess
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--simulator', required=True, help='iPhone simulator UUID')
 parser.add_argument('--confirm-paid-requests', action='store_true', required=True,
-                    help='Allow exactly one analysis and one studio request, without retries')
+                    help='Allow one analysis and, unless --analysis-only, one studio request, without retries')
+parser.add_argument('--analysis-only', action='store_true', help='Validate metadata without generating another studio photo')
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 build = root / 'build/ios-rust-migration'
@@ -33,6 +34,8 @@ with log.open('w') as output:
     if len(targets) != 1:
         raise RuntimeError('Expected exactly one DrapeTests target; no paid requests were sent')
     targets[0].setdefault('EnvironmentVariables', {})['DRAPE_LIVE_GATEWAY_SMOKE'] = '1'
+    if args.analysis_only:
+        targets[0]['EnvironmentVariables']['DRAPE_LIVE_ANALYSIS_ONLY'] = '1'
     # Keep it beside the original: __TESTROOT__ paths are relative to this file.
     live = original.with_name('LiveGateway.xctestrun')
     try:
@@ -44,4 +47,4 @@ with log.open('w') as output:
                        cwd=root, stdout=output, stderr=subprocess.STDOUT, check=True)
     finally:
         live.unlink(missing_ok=True)
-print('Live iPhone gateway check passed: analysis and studio image, synthetic fixture only.')
+print('Live iPhone gateway check passed: ' + ('analysis only' if args.analysis_only else 'analysis and studio image') + ', synthetic fixture only.')
