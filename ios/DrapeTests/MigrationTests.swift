@@ -3,6 +3,55 @@ import SwiftData
 @testable import Drape
 
 @MainActor final class MigrationTests: XCTestCase {
+    func testV2StoreMigratesToV3AndRicherBackupReopensWithEveryPhoto() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("v2.store")
+        let photo = DemoData.photo(color: .brown, symbol: "hat.widebrim")
+        let studio = DemoData.photo(color: .blue, symbol: "hat.widebrim")
+        var details = ItemDetails(); details.name = "My hat"; details.category = .accessories; details.subcategory = "Wide-brim hat"
+        let id: UUID
+        do {
+            let old = try ModelContainer(for: WardrobeSchemaV2.Garment.self, WardrobeSchemaV2.Look.self, configurations: ModelConfiguration(url: url))
+            let item = WardrobeSchemaV2.Garment(front: photo, back: photo, label: photo, details: details)
+            id = item.id; item.cutout = photo; item.studio = studio; item.useStudio = true; item.isFavorite = true
+            try item.setExtraPhotos([photo, studio])
+            item.analysisModel = AIModelDefaults.analysis; item.imageModel = AIModelDefaults.image
+            old.mainContext.insert(item); old.mainContext.insert(WardrobeSchemaV2.Look(name: "Weekend", garmentIDs: [id]))
+            try old.mainContext.save()
+        }
+        let attributes = ItemAttributes(typeDetail: "Wide-brim", tags: ["summer"],
+            originalPrice: OriginalPrice(amount: "89.95", currency: "EUR", source: .user, evidence: ""),
+            condition: ConditionAssessment(grade: .veryGood, source: .photo, evidence: "Slight brim creasing"))
+        do {
+            let migrated = try ModelContainer(for: Garment.self, Look.self, migrationPlan: WardrobeMigrationPlan.self, configurations: ModelConfiguration(url: url))
+            let item = try XCTUnwrap(migrated.mainContext.fetch(FetchDescriptor<Garment>()).first)
+            XCTAssertEqual(item.id, id); XCTAssertEqual(item.details, details); XCTAssertTrue(item.isFavorite)
+            XCTAssertEqual(item.sourcePhotos, [photo, photo, photo, photo, studio])
+            XCTAssertEqual(item.cutout, photo); XCTAssertEqual(item.studio, studio); XCTAssertTrue(item.useStudio)
+            XCTAssertEqual(item.analysisModel, AIModelDefaults.analysis); XCTAssertEqual(item.imageModel, AIModelDefaults.image)
+            XCTAssertEqual(item.attributes, .empty)
+            XCTAssertEqual(try migrated.mainContext.fetch(FetchDescriptor<Look>()).first?.garmentIDs, [id])
+            try item.setAttributes(attributes); try migrated.mainContext.save()
+        }
+        let reopened = try ModelContainer(for: Garment.self, Look.self, migrationPlan: WardrobeMigrationPlan.self, configurations: ModelConfiguration(url: url))
+        let item = try XCTUnwrap(reopened.mainContext.fetch(FetchDescriptor<Garment>()).first)
+        XCTAssertEqual(item.attributes, attributes); XCTAssertEqual(item.front, photo); XCTAssertEqual(item.studio, studio)
+        let archive = try WardrobeArchive.decode(JSONEncoder().encode(WardrobeArchive.make(context: reopened.mainContext)))
+        XCTAssertEqual(archive.version, 3)
+        let restoredURL = directory.appendingPathComponent("restored.store")
+        do {
+            let target = try ModelContainer(for: Garment.self, Look.self, configurations: ModelConfiguration(url: restoredURL))
+            XCTAssertEqual(try archive.restore(into: target.mainContext), 1)
+        }
+        let restoredStore = try ModelContainer(for: Garment.self, Look.self, configurations: ModelConfiguration(url: restoredURL))
+        let restored = try XCTUnwrap(restoredStore.mainContext.fetch(FetchDescriptor<Garment>()).first)
+        XCTAssertEqual(restored.attributes, attributes); XCTAssertEqual(restored.details, details)
+        XCTAssertEqual(restored.sourcePhotos, [photo, photo, photo, photo, studio]); XCTAssertEqual(restored.studio, studio)
+        XCTAssertEqual(try restoredStore.mainContext.fetch(FetchDescriptor<Look>()).first?.garmentIDs, [id])
+    }
+
     func testOriginalStoreMigratesWithoutLosingPhotosEditsOrLooks() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -58,8 +107,11 @@ import SwiftData
         var json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(archive)) as? [String: Any])
         json["version"] = 1
         var records = try XCTUnwrap(json["items"] as? [[String: Any]])
-        records[0].removeValue(forKey: "extraPhotos"); json["items"] = records
+        records[0].removeValue(forKey: "extraPhotos"); records[0].removeValue(forKey: "attributes"); json["items"] = records
         let legacy = try WardrobeArchive.decode(JSONSerialization.data(withJSONObject: json))
         XCTAssertEqual(legacy.items.first?.front, photo); XCTAssertNil(legacy.items.first?.extraPhotos)
+        XCTAssertNil(legacy.items.first?.attributes)
+        json["version"] = 2
+        XCTAssertNil(try WardrobeArchive.decode(JSONSerialization.data(withJSONObject: json)).items.first?.attributes)
     }
 }

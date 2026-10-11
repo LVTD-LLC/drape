@@ -138,12 +138,72 @@ enum WardrobeSchemaV2: VersionedSchema {
     }
 }
 
-typealias Garment = WardrobeSchemaV2.Garment
-typealias Look = WardrobeSchemaV2.Look
+enum WardrobeSchemaV3: VersionedSchema {
+    static let versionIdentifier = Schema.Version(3, 0, 0)
+    static var models: [any PersistentModel.Type] { [Garment.self, Look.self] }
+    @Model final class Garment {
+        @Attribute(.unique) var id: UUID
+        var createdAt: Date
+        var details: ItemDetails
+        var isFavorite: Bool
+        @Attribute(.externalStorage) var front: Data
+        @Attribute(.externalStorage) var back: Data?
+        @Attribute(.externalStorage) var label: Data?
+        @Attribute(.externalStorage) var cutout: Data?
+        @Attribute(.externalStorage) var studio: Data?
+        @Attribute(.externalStorage) var extraPhotoData: Data?
+        var thumbnail: Data?
+        var useStudio: Bool
+        var suggestions: ItemDetails?
+        var labelText: String
+        var processingState: String
+        var processingMessage: String
+        var analysisModel: String?
+        var imageModel: String?
+        var attributesData: Data?
+
+        init(front: Data, back: Data? = nil, label: Data? = nil, details: ItemDetails = .empty) {
+            id = UUID(); createdAt = .now; self.front = front; self.back = back; self.label = label
+            self.details = details; isFavorite = false; useStudio = false; labelText = ""
+            processingState = "idle"; processingMessage = ""
+        }
+        var extraPhotos: [Data] {
+            get { extraPhotoData.flatMap { try? JSONDecoder().decode([Data].self, from: $0) } ?? [] }
+        }
+        func setExtraPhotos(_ photos: [Data]) throws {
+            extraPhotoData = photos.isEmpty ? nil : try JSONEncoder().encode(photos)
+        }
+        var sourcePhotos: [Data] { [front] + [back, label].compactMap { $0 } + extraPhotos }
+        var attributes: ItemAttributes {
+            attributesData.flatMap { try? JSONDecoder().decode(ItemAttributes.self, from: $0) } ?? .empty
+        }
+        func setAttributes(_ value: ItemAttributes) throws {
+            attributesData = try JSONEncoder().encode(value.validated())
+        }
+        var needsAI: Bool { analysisModel == nil || studio == nil }
+        var displayName: String { details.name.isEmpty ? "New piece" : details.name }
+        var displayPhoto: Data { (useStudio ? studio : nil) ?? cutout ?? front }
+    }
+
+    @Model final class Look {
+        @Attribute(.unique) var id: UUID
+        var name: String
+        var notes: String
+        var createdAt: Date
+        var garmentIDs: [UUID]
+        init(name: String, notes: String = "", garmentIDs: [UUID]) {
+            self.id = UUID(); self.name = name; self.notes = notes; self.createdAt = .now; self.garmentIDs = garmentIDs
+        }
+    }
+}
+
+typealias Garment = WardrobeSchemaV3.Garment
+typealias Look = WardrobeSchemaV3.Look
 
 enum WardrobeMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [WardrobeSchemaV1.self, WardrobeSchemaV2.self] }
+    static var schemas: [any VersionedSchema.Type] { [WardrobeSchemaV1.self, WardrobeSchemaV2.self, WardrobeSchemaV3.self] }
     static var stages: [MigrationStage] {
-        [.lightweight(fromVersion: WardrobeSchemaV1.self, toVersion: WardrobeSchemaV2.self)]
+        [.lightweight(fromVersion: WardrobeSchemaV1.self, toVersion: WardrobeSchemaV2.self),
+         .lightweight(fromVersion: WardrobeSchemaV2.self, toVersion: WardrobeSchemaV3.self)]
     }
 }

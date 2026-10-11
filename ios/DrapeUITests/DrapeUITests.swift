@@ -2,6 +2,44 @@ import XCTest
 
 @MainActor final class DrapeUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<8 {
+            if element.isHittable { return }
+            app.swipeUp()
+        }
+        XCTAssertTrue(element.isHittable)
+    }
+    func testRichDetailsCanBeEditedAndFilteredByTag() {
+        let app = XCUIApplication(); app.launchArguments = ["--uitesting", "--seed"]; app.launch()
+        let shirt = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Everyday linen shirt")).firstMatch
+        XCTAssertTrue(shirt.waitForExistence(timeout: 10)); shirt.tap()
+        app.buttons["Piece options"].tap(); app.buttons["Edit details"].tap()
+        // Resolve lazily after scrolling: off-screen Form rows do not exist yet.
+        let tagField = app.descendants(matching: .any).matching(identifier: "editTags").firstMatch
+        reveal(tagField, in: app); tagField.tap(); tagField.typeText("summer, travel, SUMMER")
+        let amount = app.textFields["editPrice"]
+        reveal(amount, in: app); amount.tap(); amount.typeText("89.95")
+        let currency = app.textFields["editCurrency"]
+        reveal(currency, in: app); currency.tap(); currency.typeText("EUR")
+        let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = "Richer item editor"; attachment.lifetime = .keepAlways; add(attachment)
+        app.buttons["saveDetails"].tap()
+        let savedTags = app.staticTexts["itemTags"]
+        reveal(savedTags, in: app)
+        XCTAssertEqual(savedTags.label, "summer · travel")
+        let savedPrice = app.staticTexts["itemPrice"]
+        reveal(savedPrice, in: app); XCTAssertEqual(savedPrice.label, "EUR 89.95")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.buttons["Filter and group wardrobe"].tap()
+        let tagToggle = app.switches["filterTag-travel"]
+        reveal(tagToggle, in: app)
+        tagToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        let filterAttachment = XCTAttachment(screenshot: app.screenshot()); filterAttachment.name = "Wardrobe filters"; filterAttachment.lifetime = .keepAlways; add(filterAttachment)
+        app.buttons["Done"].tap()
+        XCTAssertTrue(shirt.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1 matching piece"].exists)
+        app.buttons["Clear filters"].tap()
+        XCTAssertFalse(app.staticTexts["1 matching piece"].exists)
+    }
     func testAddEditAndDeletePiece() {
         let app = XCUIApplication(); app.launchArguments = ["--uitesting"]; app.launch()
         app.buttons["addPiece"].tap()
@@ -49,8 +87,7 @@ import XCTest
         XCTAssertFalse(app.buttons["Review AI suggestions"].exists)
         XCTAssertFalse(app.buttons["Ask AI"].exists)
         XCTAssertFalse(app.buttons["Prepare photo"].exists)
-        app.swipeUp()
-        XCTAssertTrue(app.buttons["Finish preparing"].exists)
+        reveal(app.buttons["Finish preparing"], in: app)
     }
 
     func testCreateLookFromWardrobe() {

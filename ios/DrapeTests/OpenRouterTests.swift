@@ -35,9 +35,9 @@ final class OpenRouterTests: XCTestCase {
 
     func testStructuredResponseDecodingAndMissingFieldsRejection() throws {
         var details = ItemDetails(); details.name = "Navy shirt"; details.category = .tops; details.color = "Navy"
-        let json = String(data: try JSONEncoder().encode(details), encoding: .utf8)!
+        let json = String(data: try JSONEncoder().encode(ItemAnalysis(details: details)), encoding: .utf8)!
         let response = try JSONSerialization.data(withJSONObject: ["choices": [["message": ["content": json]]]])
-        XCTAssertEqual(try OpenRouter.decodeDetails(response), details)
+        XCTAssertEqual(try OpenRouter.decodeDetails(response).details, details)
         let badResponse = Data(#"{"choices":[{"message":{"content":"{\"name\":\"Shirt\"}"}}]}"#.utf8)
         XCTAssertThrowsError(try OpenRouter.decodeDetails(badResponse))
         XCTAssertThrowsError(try OpenRouter.decodeDetails(Data(#"{"choices":[]}"#.utf8)))
@@ -46,6 +46,27 @@ final class OpenRouterTests: XCTestCase {
     func testImageResponseRejectsMalformedPayload() {
         XCTAssertThrowsError(try OpenRouter.decodeImage(Data(#"{"data":[{"b64_json":"not valid base64!"}]}"#.utf8)))
         XCTAssertThrowsError(try OpenRouter.decodeImage(Data(#"{"data":[]}"#.utf8)))
+    }
+
+    func testRichAnalysisDecodesEvidenceAndRejectsInventedSourcesOrInvalidPrices() throws {
+        var details = ItemDetails(); details.category = .accessories; details.subcategory = "Hats"
+        var analysis = ItemAnalysis(details: details, attributes: ItemAttributes(typeDetail: "Wide-brim hat", tags: [" SUMMER ", "summer"],
+            originalPrice: OriginalPrice(amount: "25.50", currency: "EUR", source: .photo, evidence: "EUR 25.50"),
+            condition: ConditionAssessment(grade: .good, source: .photo, evidence: "Light creasing on the brim")))
+        func response(_ value: ItemAnalysis) throws -> Data {
+            try JSONSerialization.data(withJSONObject: ["choices": [["message": ["content": String(data: JSONEncoder().encode(value), encoding: .utf8)!]]]])
+        }
+        let decoded = try OpenRouter.decodeDetails(response(analysis))
+        XCTAssertEqual(decoded.attributes.tags, ["summer"])
+        XCTAssertEqual(decoded.attributes.originalPrice?.amount, "25.50")
+        XCTAssertEqual(decoded.attributes.condition?.grade, .good)
+        analysis.attributes.originalPrice?.source = .user
+        XCTAssertThrowsError(try OpenRouter.decodeDetails(response(analysis)))
+        analysis.attributes.originalPrice = nil
+        analysis.attributes.condition?.evidence = ""
+        XCTAssertThrowsError(try OpenRouter.decodeDetails(response(analysis)))
+        analysis.attributes.condition = nil; analysis.details.subcategory = "Sneakers"
+        XCTAssertThrowsError(try OpenRouter.decodeDetails(response(analysis)))
     }
 
     func testModelCapabilityFiltering() throws {
@@ -114,11 +135,11 @@ final class StubURLProtocol: URLProtocol, @unchecked Sendable {
     }
     func testAnalysisUsesDrapeServiceWithoutProviderCredentialsAndReturnsTypedDetails() async throws {
         var details = ItemDetails(); details.name = "Cream cardigan"; details.category = .outerwear
-        let response = try JSONSerialization.data(withJSONObject: ["choices": [["message": ["content": String(data: try JSONEncoder().encode(details), encoding: .utf8)!]]]])
+        let response = try JSONSerialization.data(withJSONObject: ["choices": [["message": ["content": String(data: try JSONEncoder().encode(ItemAnalysis(details: details)), encoding: .utf8)!]]]])
         StubURLProtocol.configure(status: 200, body: response)
         let configuration = AIConfiguration(analysisModel: AIModelDefaults.analysis, imageModel: AIModelDefaults.image, generateStudio: false)
         let result = try await service().analyze(photos: [PhotoInput(role: .front, data: DemoData.photo(color: .brown, symbol: "tshirt"))], configuration: configuration)
-        XCTAssertEqual(result, details)
+        XCTAssertEqual(result.details, details)
         let request = try XCTUnwrap(StubURLProtocol.request())
         XCTAssertEqual(request.url?.absoluteString, "https://drape-ai.example/api/v1/chat/completions")
         XCTAssertEqual(request.httpMethod, "POST")
