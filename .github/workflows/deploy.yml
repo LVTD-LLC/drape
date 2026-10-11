@@ -1,14 +1,7 @@
-# Rust runtime changes deploy automatically; use workflow_dispatch for workflow-only changes.
+# Production deployments run only when manually dispatched.
 name: Deploy production
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "web/**"
-      - "!web/README.md"
-      - "!web/AGENTS.md"
-      - "!web/CLAUDE.md"
   workflow_dispatch:
 
 concurrency:

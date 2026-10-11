@@ -1,18 +1,6 @@
 name: iOS
 on:
-  push:
-    branches: [main]
-    paths:
-      - "ios/**"
-      - ".github/workflows/ios.yml"
-      - "scripts/configure-development.py"
-      - "scripts/test-live-gateway.py"
-  pull_request:
-    paths:
-      - "ios/**"
-      - ".github/workflows/ios.yml"
-      - "scripts/configure-development.py"
-      - "scripts/test-live-gateway.py"
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
