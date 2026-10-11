@@ -100,22 +100,22 @@ private actor TestWardrobeAI: WardrobeAI {
         XCTAssertEqual(item.processingState, "ready"); XCTAssertEqual(item.front, photo)
     }
 
-    func testExplicitEnrichmentAnalyzesOriginalsWithoutRegeneratingStudio() async throws {
+    func testCompletedItemWithMissingAttributesCannotRunAIAgain() async throws {
         let context = try context(), photo = DemoData.photo(color: .brown, symbol: "tshirt")
         let service = TestWardrobeAI(photo: photo)
         let processor = ProcessingCoordinator(service: service, prepare: { _, _ in
-            XCTFail("Details-only enrichment must not reprocess photos")
+            XCTFail("A completed item must not reprocess photos")
             return LocalPhotoResult(cutout: nil, labelText: "")
         })
         let item = Garment(front: photo); item.details.name = "My edited shirt"
         item.studio = Data([1, 2, 3]); item.analysisModel = AIModelDefaults.analysis; item.imageModel = AIModelDefaults.image
+        item.processingState = "ready"
         context.insert(item); try context.save()
-        processor.start(item, context: context, configuration: .automatic, detailsOnly: true)
-        try item.setAttributes(ItemAttributes(tags: ["mine"]))
+        processor.start(item, context: context, configuration: .automatic)
         try await wait(processor)
         let counts = await service.counts(), received = await service.receivedPhotos
-        XCTAssertEqual(counts, [1, 0]); XCTAssertEqual(received, [photo])
-        XCTAssertEqual(item.details.name, "My edited shirt"); XCTAssertEqual(item.attributes.tags, ["mine"])
-        XCTAssertEqual(item.attributes.typeDetail, "Crew neck"); XCTAssertEqual(item.studio, Data([1, 2, 3]))
+        XCTAssertEqual(counts, [0, 0]); XCTAssertTrue(received.isEmpty)
+        XCTAssertEqual(item.details.name, "My edited shirt"); XCTAssertEqual(item.attributes, .empty)
+        XCTAssertEqual(item.processingState, "ready"); XCTAssertEqual(item.studio, Data([1, 2, 3]))
     }
 }

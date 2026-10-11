@@ -101,11 +101,6 @@ struct ItemDetailView: View {
                         .buttonStyle(.bordered)
                     Text("Sends photos to Drape’s AI providers to complete missing details or the studio photo. Completed steps won’t run again.")
                         .font(.caption).foregroundStyle(.secondary)
-                } else if !busy {
-                    Button("Fill missing details") { processor.start(item, context: context, configuration: .automatic, detailsOnly: true) }
-                        .buttonStyle(.bordered).accessibilityIdentifier("fillMissingDetails")
-                    Text("Sends original photos to Drape’s AI providers to fill empty fields, including tags and visible condition. Saved details and the studio photo are kept.")
-                        .font(.caption).foregroundStyle(.secondary)
                 }
             }.padding(22)
         }.background(Style.canvas)

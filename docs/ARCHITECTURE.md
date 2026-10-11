@@ -36,7 +36,7 @@ An Apple-only alternative is CloudKit with the user's iCloud account. Evaluate s
 - Imagery: `/images`, one reference front photo, one output, faithful garment preservation prompt. Generation cannot guarantee exact fidelity; original comparison is part of the product.
 - Failure: safe HTTP status descriptions; no raw provider response in user alerts; no authorization/request payload logging.
 - Model selection: Drape owns fixed analysis and image choices; the gateway validates models and request limits. Provider errors are redacted and recoverable.
-- Upload confirmation: the disclosed Add to wardrobe, Finish preparing, or Fill missing details action submits photos directly; no second modal or customer provider setup.
+- Upload confirmation: the disclosed Add to wardrobe or Finish preparing action submits photos directly; no second modal or customer provider setup.
 
 ## Reference documentation
 
@@ -61,4 +61,4 @@ Before changing the shipped schema, preserve `WardrobeSchemaV1`, `WardrobeSchema
 
 Broad category and canonical item type form two taxonomy levels; optional specific style supplies a third. Legacy free-text subcategories remain stored and are mapped to known types for browsing where possible. Price is a reported original price, never an AI valuation: image extraction requires a legible amount, unambiguous currency, and supporting text. Condition estimates describe visible wear only and are labeled as estimates; unknown stays unknown. Manual edits take precedence, including edits made while processing.
 
-Backup V3 includes attributes and remains able to import V1/V2 with empty attributes. Old apps reject V3 archives. Existing completed items are not uploaded automatically: a disclosed, explicit Fill missing details action requests analysis only and preserves existing studio photos. Tags are normalized and deduplicated; filtering combines category, type, tags, condition, and favorites. Price sorting groups currencies rather than comparing amounts across currencies without exchange rates.
+Backup V3 includes attributes and remains able to import V1/V2 with empty attributes. Old apps reject V3 archives. Completed items cannot rerun analysis or studio generation, even if optional metadata is missing. Existing items can receive richer metadata through manual editing; new items collect it during their initial analysis. Finish preparing only processes unfinished stages. Tags are normalized and deduplicated; filtering combines category, type, tags, condition, and favorites. Price sorting groups currencies rather than comparing amounts across currencies without exchange rates.

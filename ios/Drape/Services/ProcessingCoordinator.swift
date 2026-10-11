@@ -14,10 +14,10 @@ import SwiftData
         self.prepare = prepare
     }
 
-    func start(_ item: Garment, context: ModelContext, configuration: AIConfiguration? = nil, detailsOnly: Bool = false) {
+    func start(_ item: Garment, context: ModelContext, configuration: AIConfiguration? = nil) {
         guard !activeIDs.contains(item.id) else { return }
-        // Ordinary retries skip completed stages. Explicit enrichment reruns analysis only.
-        if configuration != nil && !item.needsAI && !detailsOnly { return }
+        // Completed stages cannot be repeated, even when optional metadata is missing.
+        if configuration != nil && !item.needsAI { return }
         let id = item.id
         activeIDs.insert(id)
         item.processingState = "processing"
@@ -32,19 +32,17 @@ import SwiftData
         let service = service, prepare = prepare
         tasks[id] = Task { [weak self] in
             defer { self?.activeIDs.remove(id); self?.tasks[id] = nil }
-            if !detailsOnly {
-                let local = await prepare(front, label)
-                guard !Task.isCancelled, item.modelContext != nil else { return }
-                item.cutout = local.cutout ?? item.cutout
-                item.labelText = local.labelText
-                let localPhoto = item.displayPhoto
-                let localThumbnail = await Task.detached { ImageTools.thumbnail(localPhoto) }.value
-                guard !Task.isCancelled, item.modelContext != nil else { return }
-                item.thumbnail = localThumbnail
-            }
+            let local = await prepare(front, label)
+            guard !Task.isCancelled, item.modelContext != nil else { return }
+            item.cutout = local.cutout ?? item.cutout
+            item.labelText = local.labelText
+            let localPhoto = item.displayPhoto
+            let localThumbnail = await Task.detached { ImageTools.thumbnail(localPhoto) }.value
+            guard !Task.isCancelled, item.modelContext != nil else { return }
+            item.thumbnail = localThumbnail
             var messages: [String] = []
             if let configuration {
-                if item.analysisModel == nil || detailsOnly {
+                if item.analysisModel == nil {
                     do {
                         let analysis = try await service.analyze(photos: photos.map { PhotoInput(data: $0) }, configuration: configuration)
                         guard !Task.isCancelled, item.modelContext != nil else { return }
@@ -65,7 +63,7 @@ import SwiftData
                         messages.append("Details: " + error.localizedDescription)
                     }
                 }
-                if !detailsOnly && configuration.generateStudio && item.studio == nil {
+                if configuration.generateStudio && item.studio == nil {
                     item.processingMessage = "Creating your studio photo…"
                     do {
                         let studio = try await service.studioPhoto(front: front, configuration: configuration)
