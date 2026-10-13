@@ -5,7 +5,7 @@ A private wardrobe for the clothes you already love.
 | Directory | Purpose |
 | --- | --- |
 | `ios/` | Native SwiftUI iPhone app, SwiftData catalog, XcodeGen project and tests |
-| `android/` | Reserved for the future Kotlin app; no implementation yet |
+| `android/` | Native Kotlin / Compose Android app, local wardrobe and device tests |
 | `web/` | ShipRust-generated Rust workspace: Axum API and starter web UI, Postgres, worker |
 | `docs/` | Shared architecture, deployment, privacy, and release documentation |
 | `scripts/` | Development configuration and explicit integration checks |
@@ -30,6 +30,12 @@ Add up to six photos, then tap **Add to wardrobe** after reading the nearby uplo
 disclosure. Photos save first; AI details and a studio cover appear as processing
 finishes. **Save photos only** works offline. **Finish preparing** explicitly retries
 unfinished stages. Originals and user edits are preserved. Export backups through Files.
+
+## Android
+
+Open `android/` in Android Studio. See [Android setup and verification](android/README.md).
+The native app uses the same AI gateway and keeps its wardrobe locally. Android 9+;
+target Android 16. Private development AI access is configured separately.
 
 ## Rust web and backend
 
@@ -58,6 +64,6 @@ Production has separate `drape-ai` web, `drape-worker`, and `drape-postgres` ser
 GitHub Actions builds one image and deploys web and worker through
 `caprover/deploy-from-github`. See [deployment and rollback](docs/AI-SERVICE.md).
 
-Future Android and web clients will share the authenticated catalog API. That
+A future synchronized catalog for Android, iOS and web would share an authenticated API. That
 requires explicit account linking, per-user authorization, recovery, and sync
 migration work before mobile data is uploaded. See [architecture](docs/ARCHITECTURE.md).

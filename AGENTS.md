@@ -1,8 +1,8 @@
 # Drape
 
-Monorepo: `ios/` is the native iPhone app, `android/` is reserved for future Kotlin,
+Monorepo: `ios/` is the native iPhone app, `android/` is the native Kotlin / Compose app,
 and `web/` is the ShipRust-generated shared Rust backend and web scaffold. Read
-`web/AGENTS.md` before Rust changes. Shared docs and scripts live at the root.
+`web/AGENTS.md` before Rust changes. Shared docs and scripts live at the root. Read `android/AGENTS.md` before Android changes.
 Do not implement Android or cloud wardrobe sync as part of a backend-only task.
 
 Native iPhone app. Prefer SwiftUI, SwiftData, PhotosUI, Vision, LocalAuthentication, Keychain, and URLSession. Deployment target iOS 17.6; build with a current stable Xcode. Keep the app useful offline.

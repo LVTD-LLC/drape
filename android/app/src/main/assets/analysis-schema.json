@@ -1,0 +1,164 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "details",
+    "attributes"
+  ],
+  "properties": {
+    "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "category",
+        "subcategory",
+        "color",
+        "brand",
+        "size",
+        "material",
+        "pattern",
+        "season",
+        "care",
+        "notes"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Tops",
+            "Bottoms",
+            "Dresses",
+            "Outerwear",
+            "Shoes",
+            "Bags",
+            "Accessories",
+            "Other"
+          ]
+        },
+        "subcategory": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "brand": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "material": {
+          "type": "string"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "season": {
+          "type": "string"
+        },
+        "care": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "typeDetail",
+        "tags",
+        "originalPrice",
+        "condition"
+      ],
+      "properties": {
+        "typeDetail": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "originalPrice": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "amount",
+                "currency",
+                "source",
+                "evidence"
+              ],
+              "properties": {
+                "amount": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "photo"
+                  ]
+                },
+                "evidence": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "grade",
+                "source",
+                "evidence"
+              ],
+              "properties": {
+                "grade": {
+                  "type": "string",
+                  "enum": [
+                    "Excellent",
+                    "Very good",
+                    "Good",
+                    "Fair",
+                    "Poor"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "photo"
+                  ]
+                },
+                "evidence": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

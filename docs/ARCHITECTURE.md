@@ -14,7 +14,7 @@ SwiftData uses an explicit V1 → V2 → V3 migration plan; the shipped model la
 
 ## Repository and service boundaries
 
-`ios/` owns the Swift app, `android/` is an empty future Kotlin boundary, and
+`ios/` owns the Swift app, `android/` owns the native Kotlin / Compose client, and
 `web/` owns the Rust API plus the generated web UI. Both future mobile clients
 and the web catalog will share Rust business logic. No catalog frontend or
 synchronization is implemented by the initial backend migration.
@@ -62,3 +62,24 @@ Before changing the shipped schema, preserve `WardrobeSchemaV1`, `WardrobeSchema
 Broad category and canonical item type form two taxonomy levels; optional specific style supplies a third. Legacy free-text subcategories remain stored and are mapped to known types for browsing where possible. Price is a reported original price, never an AI valuation: image extraction requires a legible amount, unambiguous currency, and supporting text. Condition estimates describe visible wear only and are labeled as estimates; unknown stays unknown. Manual edits take precedence, including edits made while processing.
 
 Backup V3 includes attributes and remains able to import V1/V2 with empty attributes. Old apps reject V3 archives. Completed items cannot rerun analysis or studio generation, even if optional metadata is missing. Existing items can receive richer metadata through manual editing; new items collect it during their initial analysis. Finish preparing only processes unfinished stages. Tags are normalized and deduplicated; filtering combines category, type, tags, condition, and favorites. Price sorting groups currencies rather than comparing amounts across currencies without exchange rates.
+
+
+## Android local wardrobe (schema v1)
+
+Android uses Jetpack Compose with an app-owned coordinator, SQLite schema v1 for
+item/look records, and private photo files. Android has an independent local wardrobe;
+there is no cloud sync or iOS backup import. Originals are normalized to JPEG with EXIF
+removed before storage/upload, preserving the stored source independently of studio
+results. A disclosed action initiates each set of remote steps. Analysis is saved before
+studio generation, manual edits take precedence, and interrupted work requires explicit
+completion. Automatic HTTP retries and redirects are disabled for paid requests.
+
+Android backup v1 exports records and photos in a bounded 100 MB JSON archive. Import
+validates the full archive before committing missing records, remaps photo filenames,
+and preserves existing records. Automatic OS cloud backup and device transfer are
+disabled; users explicitly export/import through the system document picker. Optional
+app locking uses Android device credentials. Shared provider secrets are never shipped;
+only private debug builds may include the existing revocable gateway development token.
+
+The first Android version omits Vision cutouts and cross-platform backup compatibility.
+Its schema must be retained and explicitly migrated before future layout changes.
