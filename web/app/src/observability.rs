@@ -15,7 +15,7 @@ use opentelemetry::{
 };
 #[cfg(feature = "posthog-otlp")]
 use opentelemetry_sdk::propagation::TraceContextPropagator;
-#[cfg(any(feature = "posthog-errors", feature = "sentry-errors"))]
+#[cfg(feature = "sentry-errors")]
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::{Instrument, Span};
@@ -187,11 +187,6 @@ impl Telemetry {
     pub async fn shutdown(self) {}
 }
 
-#[cfg(feature = "posthog-server")]
-pub fn exception_trace_context() -> Option<posthog_rs::TraceContext> {
-    trace_ids().map(|(trace_id, span_id)| posthog_rs::TraceContext::new(trace_id, span_id))
-}
-
 #[cfg(feature = "posthog-otlp")]
 pub fn trace_ids() -> Option<(String, String)> {
     let context = Span::current().context();
@@ -245,11 +240,11 @@ pub async fn request(State(state): State<SharedState>, req: Request, next: Next)
     let response = async move {
         let started = Instant::now();
         let response = next.run(req).await;
-        #[cfg(any(feature = "posthog-errors", feature = "sentry-errors"))]
+        #[cfg(feature = "sentry-errors")]
         let mut response = response;
         let status = response.status();
         Span::current().record("http.response.status_code", status.as_u16());
-        #[cfg(any(feature = "posthog-errors", feature = "sentry-errors"))]
+        #[cfg(feature = "sentry-errors")]
         let error = response.extensions_mut().remove::<Arc<anyhow::Error>>();
         if status.is_server_error() {
             Span::current().record("otel.status_code", "ERROR");
@@ -257,21 +252,6 @@ pub async fn request(State(state): State<SharedState>, req: Request, next: Next)
             if state.sentry.is_some() {
                 let fallback = anyhow::anyhow!("HTTP {} on {} {}", status.as_u16(), method, route);
                 sentry::integrations::anyhow::capture_anyhow(error.as_deref().unwrap_or(&fallback));
-            }
-            #[cfg(feature = "posthog-errors")]
-            if state.analytics.is_some() {
-                let fallback = anyhow::anyhow!("HTTP {} on {} {}", status.as_u16(), method, route);
-                let error = error.as_deref().unwrap_or(&fallback);
-                let mut options = posthog_rs::CaptureExceptionOptions::new()
-                    .property("http.route", &route).expect("string serializes")
-                    .property("http.request.method", &method).expect("string serializes")
-                    .property("http.response.status_code", status.as_u16()).expect("number serializes");
-                if let Some(id) = crate::analytics::current_user_id() {
-                    options = options.distinct_id(id);
-                }
-                if let Err(error) = posthog_rs::capture_exception_with::<dyn std::error::Error + Send + Sync>(error.as_ref(), options).await {
-                    tracing::warn!(target: "posthog_rs", %error, "exception could not be queued");
-                }
             }
         }
         tracing::info!(http.route = %route, http.response.status_code = status.as_u16(), duration_ms = started.elapsed().as_millis() as u64, "request completed");

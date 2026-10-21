@@ -152,15 +152,16 @@ Markdown dependencies remain if either feature is enabled.
 `app/src/analytics.rs` reads PostHog Config once at startup and records optional
 product events. `app/src/observability.rs` owns bounded OTLP exporters and the
 HTTP error boundary; `app/assets/analytics.js` defers browser SDK loading.
-`app/src/errors.rs` preserves source errors with `posthog-errors` or `sentry-errors` enabled.
+`app/src/errors.rs` preserves source errors with `sentry-errors` enabled.
+PostHog error tracking is not used: never enable PostHog exception capture.
 Keep provider-specific code in the app, not the reusable auth/core crates.
 
-The five capabilities are `posthog-web`, `posthog-product`, `posthog-errors`,
-`posthog-logs`, and `posthog-traces`. All are off in this source workspace;
+The four capabilities are `posthog-web`, `posthog-product`, `posthog-logs`,
+and `posthog-traces`. All are off in this source workspace;
 generation selects Cargo defaults. A blank runtime `POSTHOG_PROJECT_TOKEN`
 disables exports. Never ship site-specific events, service names, or tokens.
 Product events include email; do not add passwords, cookies, bodies, or query
-strings to telemetry. Error reports must not change the HTTP response.
+strings to telemetry.
 
 Run the five done checks with default features and `--all-features`, and clippy,
 tests, and offline checks for each capability independently with
@@ -182,7 +183,7 @@ layer; `app/assets/sentry.js` loads the browser SDK. A blank `SENTRY_DSN` disabl
 both SDKs. Parse configuration once before Tokio starts. Ignore sample-rate
 settings for disabled capabilities. Browser profiling belongs to traces.
 Keep provider code in the app and use package name + deployment revision for
-releases. Preserve source errors with `sentry-errors` or `posthog-errors`.
+releases. Preserve source errors with `sentry-errors`.
 
 Never attach bodies, cookies, query strings or user profiles; keep replay
 masked. Browser SDK v11 uses `dataCollection` for those privacy settings and

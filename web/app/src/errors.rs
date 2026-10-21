@@ -1,29 +1,29 @@
 //! Content negotiation for missing resources. HTML remains the default.
 
-#[cfg(not(any(feature = "posthog-errors", feature = "sentry-errors")))]
+#[cfg(not(feature = "sentry-errors"))]
 pub use app_core::AppError;
 use app_core::http::prefers_markdown;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-#[cfg(any(feature = "posthog-errors", feature = "sentry-errors"))]
+#[cfg(feature = "sentry-errors")]
 use std::sync::Arc;
 
 /// Application error boundary. Keep the original error on the response so the
 /// observability middleware can report its source chain without exposing it.
-#[cfg(any(feature = "posthog-errors", feature = "sentry-errors"))]
+#[cfg(feature = "sentry-errors")]
 pub enum AppError {
     Internal(anyhow::Error),
     Status(StatusCode, String),
 }
 
-#[cfg(any(feature = "posthog-errors", feature = "sentry-errors"))]
+#[cfg(feature = "sentry-errors")]
 impl<E: Into<anyhow::Error>> From<E> for AppError {
     fn from(error: E) -> Self {
         Self::Internal(error.into())
     }
 }
 
-#[cfg(any(feature = "posthog-errors", feature = "sentry-errors"))]
+#[cfg(feature = "sentry-errors")]
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {

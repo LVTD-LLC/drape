@@ -207,14 +207,13 @@ pub fn moon_icon() -> Markup {
 }
 
 fn analytics_script(state: &AppState, user: Option<&User>) -> Markup {
-    #[cfg(any(feature = "posthog-web", feature = "posthog-errors"))]
+    #[cfg(feature = "posthog-web")]
     if let Some(config) = &state.analytics {
         return html! {
             script defer src=(state.asset_url("analytics.js"))
                 data-project-token=(config.project_token)
                 data-api-host=(config.api_host) data-sdk-url=(config.sdk_url)
                 data-web-analytics=(cfg!(feature = "posthog-web"))
-                data-error-tracking=(cfg!(feature = "posthog-errors"))
                 data-user-id=(user.map(|user| user.id.to_string()).unwrap_or_default()) {}
         };
     }

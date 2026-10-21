@@ -30,32 +30,7 @@ fn exports_correlated_errors_logs_metrics_and_isolates_concurrent_requests() {
         .unwrap();
     let guard = sentry::init(config.client_options().transport(collector.clone()));
     tokio::runtime::Runtime::new().unwrap().block_on(async {
-        // With both integrations selected, send the same failures to a local
-        // PostHog collector too. Neither provider may consume the other's error.
-        #[cfg(feature = "posthog-errors")]
-        let posthog_events = Arc::new(Mutex::new(Vec::<serde_json::Value>::new()));
-        #[cfg(feature = "posthog-errors")]
-        let (analytics, posthog_server) = {
-            let received = posthog_events.clone();
-            let collector = Router::new().fallback(move |req: Request<Body>| {
-                let received = received.clone();
-                async move {
-                    if req.uri().path() == "/batch/" {
-                        let bytes = req.into_body().collect().await.unwrap().to_bytes();
-                        let batch: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-                        received.lock().unwrap().extend(batch["batch"].as_array().unwrap().iter().cloned());
-                    }
-                    StatusCode::OK
-                }
-            });
-            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-            let mut config = app::analytics::Config::parse("phc_test", "").unwrap().unwrap();
-            config.api_host = format!("http://{}", listener.local_addr().unwrap());
-            let server = tokio::spawn(async { axum::serve(listener, collector).await.unwrap() });
-            posthog_rs::init_global(config.client_options().unwrap()).await.unwrap();
-            (Some(config), server)
-        };
-        #[cfg(all(feature = "posthog", not(feature = "posthog-errors")))]
+        #[cfg(feature = "posthog")]
         let analytics = None;
         let telemetry = app::observability::Telemetry::init(
             #[cfg(feature = "posthog")]
@@ -143,16 +118,6 @@ fn exports_correlated_errors_logs_metrics_and_isolates_concurrent_requests() {
         );
         assert_eq!(first.unwrap().status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(second.unwrap().status(), StatusCode::INTERNAL_SERVER_ERROR);
-        #[cfg(feature = "posthog-errors")]
-        {
-            posthog_rs::shutdown().await;
-            let events = posthog_events.lock().unwrap();
-            let errors: Vec<_> = events.iter().filter(|event| event["event"] == "$exception").collect();
-            assert_eq!(errors.len(), 2);
-            assert!(errors.iter().any(|event| event.to_string().contains("loading test object")));
-            assert!(errors.iter().any(|event| event.to_string().contains("synthetic second failure")));
-            posthog_server.abort();
-        }
         telemetry.shutdown().await;
     });
     assert!(guard.flush(Some(std::time::Duration::from_secs(5))));

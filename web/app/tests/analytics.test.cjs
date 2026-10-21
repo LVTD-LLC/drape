@@ -6,7 +6,7 @@ const vm = require('node:vm');
 
 const source = readFileSync(join(__dirname, '../assets/analytics.js'), 'utf8');
 
-function load(userId = '', previousUser, sdkAvailable = true, webAnalytics = true, errorTracking = true) {
+function load(userId = '', previousUser, sdkAvailable = true, webAnalytics = true) {
     const calls = [];
     let script;
     let options;
@@ -27,7 +27,7 @@ function load(userId = '', previousUser, sdkAvailable = true, webAnalytics = tru
             currentScript: { dataset: {
                 projectToken: 'phc_test', apiHost: 'https://eu.i.posthog.com',
                 sdkUrl: 'https://eu-assets.i.posthog.com/static/array.js', userId,
-                webAnalytics: String(webAnalytics), errorTracking: String(errorTracking),
+                webAnalytics: String(webAnalytics),
             } },
             createElement(tag) { assert.equal(tag, 'script'); return {}; },
             head: { appendChild(element) { script = element; } },
@@ -49,7 +49,7 @@ test('anonymous visits keep their identity and capture exactly one pageview', ()
     assert.equal(options.capture_pageleave, true);
     assert.equal(options.person_profiles, 'identified_only');
     assert.equal(options.autocapture, false);
-    assert.equal(options.capture_exceptions, true);
+    assert.equal(options.capture_exceptions, false);
     assert.equal(options.capture_performance.web_vitals, true);
     assert.equal(options.disable_session_recording, true);
     assert.equal(options.disable_surveys, true);
@@ -74,15 +74,16 @@ test('missing SDK does not throw or affect the page', () => {
     assert.deepEqual(load('', undefined, false).calls, []);
 });
 
-test('errors alone never emit pageviews, pageleaves or Web Vitals', () => {
-    const { calls, options } = load('user-a', undefined, true, false, true);
+test('without web analytics, never emits pageviews, pageleaves or Web Vitals', () => {
+    const { calls, options } = load('user-a', undefined, true, false);
     assert.deepEqual(calls, [['identify', 'user-a']]);
     assert.equal(options.capture_pageleave, false);
     assert.equal(options.capture_performance, false);
-    assert.equal(options.capture_exceptions, true);
     assert.equal(options.enable_heatmaps, false);
     assert.equal(options.advanced_disable_feature_flags, true);
 });
-test('web analytics alone does not capture exceptions', () => {
-    assert.equal(load('', undefined, true, true, false).options.capture_exceptions, false);
+
+test('never captures exceptions (PostHog error tracking is not used)', () => {
+    assert.equal(load().options.capture_exceptions, false);
+    assert.equal(load('', undefined, true, false).options.capture_exceptions, false);
 });

@@ -9,7 +9,7 @@ publish.workspace = true
 default-run = "drape"
 
 [features]
-default = ["blog", "docs", "stripe", "api", "mcp", "storage", "sentry-errors", "sentry-traces", "sentry-logs", "sentry-metrics", "sentry-replay", "posthog-web", "posthog-product", "posthog-errors", "posthog-logs", "posthog-traces"]
+default = ["blog", "docs", "stripe", "api", "mcp", "storage", "sentry-errors", "sentry-traces", "sentry-logs", "sentry-metrics", "sentry-replay", "posthog-web", "posthog-product", "posthog-logs", "posthog-traces"]
 api = []
 # The MCP server authenticates with the API feature's keys.
 mcp = ["api"]
@@ -33,7 +33,6 @@ sentry-layer = ["sentry-server", "sentry/tracing", "dep:tracing-subscriber"]
 posthog = []
 posthog-web = ["posthog"]
 posthog-product = ["posthog-server"]
-posthog-errors = ["posthog-server"]
 posthog-logs = ["posthog-otlp"]
 posthog-traces = ["posthog-otlp"]
 # Internal dependency groups; choose the capabilities above.

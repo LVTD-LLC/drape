@@ -53,12 +53,6 @@ impl Config {
             .max_batch_size(100)
             .request_timeout_seconds(3)
             .shutdown_timeout_ms(5000)
-            .error_tracking(
-                posthog_rs::ErrorTrackingOptionsBuilder::default()
-                    .capture_panics(cfg!(feature = "posthog-errors"))
-                    .trace_context_provider(crate::observability::exception_trace_context)
-                    .build()?,
-            )
             .before_send(|mut event| {
                 event.insert_prop("service", env!("CARGO_PKG_NAME")).ok()?;
                 event.insert_prop("deployment_revision", app_core::http::BUILD_REVISION).ok()?;
@@ -104,11 +98,6 @@ impl crate::AppState {
 
 tokio::task_local! {
     pub(crate) static REQUEST_USER_ID: std::cell::RefCell<Option<String>>;
-}
-
-#[cfg(feature = "posthog-errors")]
-pub(crate) fn current_user_id() -> Option<String> {
-    REQUEST_USER_ID.try_with(|id| id.borrow().clone()).ok().flatten()
 }
 
 pub fn record_user(user: &app_auth::User) {
