@@ -51,10 +51,6 @@ async fn start(#[cfg(feature = "sentry")] sentry_config: Option<app::sentry::Con
         tracing::error!(%error, "application stopped with an error");
         #[cfg(feature = "sentry-errors")]
         sentry::integrations::anyhow::capture_anyhow(error);
-        #[cfg(feature = "posthog-errors")]
-        if analytics.is_some() {
-            let _ = posthog_rs::capture_exception::<dyn std::error::Error + Send + Sync>(error.as_ref()).await;
-        }
     }
     // shutdown flushes the bounded SDK queue, even if serving returned an error.
     #[cfg(feature = "posthog-server")]

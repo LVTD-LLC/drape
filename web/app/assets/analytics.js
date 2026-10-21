@@ -12,7 +12,7 @@
             capture_pageview: false,
             capture_pageleave: config.webAnalytics === 'true',
             autocapture: false,
-            capture_exceptions: config.errorTracking === 'true',
+            capture_exceptions: false,
             capture_performance: config.webAnalytics === 'true' ? { web_vitals: true } : false,
             disable_session_recording: true,
             disable_surveys: true,

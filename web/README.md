@@ -201,7 +201,7 @@ content features are disabled. Test all four combinations: defaults,
 
 ## Optional PostHog
 
-PostHog is optional. The generator's **Use PostHog** switch starts on and reveals five
+PostHog is optional. The generator's **Use PostHog** switch starts on and reveals four
 independent capabilities, initially all selected. Uncheck any you do not need.
 The selected Cargo features become the app's defaults:
 
@@ -209,7 +209,6 @@ The selected Cargo features become the app's defaults:
 | --- | --- |
 | `posthog-web` | Browser pageviews, pageleaves, and Core Web Vitals |
 | `posthog-product` | Successful signup, sign-in, and sign-out events; UUID identity, email, and account creation date |
-| `posthog-errors` | Browser exceptions, HTTP 5xx source chains, fatal errors after initialization, and best-effort panic reports |
 | `posthog-logs` | Batched structured Rust application logs |
 | `posthog-traces` | Sampled HTTP request spans, with trace context propagation |
 
@@ -222,17 +221,18 @@ the generator or included in downloads.
 You can change the defaults in `app/Cargo.toml` later, or try a capability:
 
 ```sh
-cargo run --features posthog-web,posthog-errors
+cargo run --features posthog-web,posthog-product
 ```
 
 When all PostHog features are disabled, there is no PostHog middleware or
 PostHog/OpenTelemetry runtime dependency. Web analytics alone does not need a
-Rust SDK. Product events and errors add `posthog-rs`; logs and traces add
+Rust SDK. Product events add `posthog-rs`; logs and traces add
 OpenTelemetry. The `posthog`, `posthog-server`, and `posthog-otlp` features are
-internal groups; select the five capabilities above instead.
+internal groups; select the four capabilities above instead.
 
 The browser SDK loads asynchronously without a JavaScript build step. Replay,
-autocapture, heatmaps, surveys, and feature flags are disabled. Browser and
+autocapture, exception capture, heatmaps, surveys, and feature flags are disabled.
+PostHog error tracking is not used; select Sentry errors for error reporting. Browser and
 server identity use the user's UUID; sign-out/account switches reset browser
 identity. Product events intentionally include account email. Server telemetry
 omits passwords, cookies, bodies, query strings, and raw unmatched paths;
@@ -242,11 +242,11 @@ where required.
 
 `POSTHOG_TRACE_SAMPLE_RATIO` defaults to `0.1` and accepts `0` through `1`.
 It samples new traces; valid upstream sampled trace context is respected.
-Logs and errors are independent of trace sampling. Health checks and static
+Logs are independent of trace sampling. Health checks and static
 assets are excluded from request telemetry. Export queues are bounded and
 flush at shutdown; request handlers do not wait for telemetry network calls.
-Panics in an aborting release process can exit before queued reports flush.
-To retain source locations for release error reports, build with
+An aborting release process can exit before queued exports flush.
+To retain source locations in release builds, build with
 `CARGO_PROFILE_RELEASE_DEBUG=line-tables-only` and
 `CARGO_PROFILE_RELEASE_STRIP=none` (larger binary). Symbol upload is not configured.
 

@@ -78,12 +78,7 @@ pub fn router(state: SharedState) -> Router {
                 .layer(middleware::from_fn(same_origin_guard(state.cfg.site_url.clone()))),
         )
         .route("/avatars/{*path}", get(crate::avatars::serve));
-    #[cfg(any(
-        feature = "posthog-errors",
-        feature = "posthog-logs",
-        feature = "posthog-traces",
-        feature = "sentry-server"
-    ))]
+    #[cfg(any(feature = "posthog-logs", feature = "posthog-traces", feature = "sentry-server"))]
     let router = router.layer(middleware::from_fn_with_state(state.clone(), crate::observability::request));
     #[cfg(feature = "sentry-server")]
     let router = router.layer(middleware::from_fn_with_state(state.clone(), crate::sentry::request));

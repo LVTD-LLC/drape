@@ -175,26 +175,15 @@ async fn exports_events_profiles_errors_logs_and_correlated_traces(pool: sqlx::P
             "{name}: {events:?}"
         );
     }
-    for event in events.iter().filter(|event| event["event"] != "$exception") {
-        assert_eq!(event["event"] == "$exception", !cfg!(feature = "posthog-product"));
+    assert!(
+        !events.iter().any(|event| event["event"] == "$exception"),
+        "PostHog error tracking is not used: {events:?}"
+    );
+    for event in &events {
         assert_eq!(event["properties"]["$set"]["email"], "telemetry@example.com");
         assert!(event["properties"]["$set_once"]["created_at"].as_str().is_some());
         if cfg!(feature = "posthog-traces") {
             assert_eq!(event["properties"]["$trace_id"], "11111111111111111111111111111111");
-        }
-    }
-    let exceptions: Vec<_> = events.iter().filter(|event| event["event"] == "$exception").collect();
-    assert_eq!(exceptions.len(), if cfg!(feature = "posthog-errors") { 3 } else { 0 }, "{exceptions:?}");
-    if cfg!(feature = "posthog-errors") {
-        let failure = exceptions.iter().find(|event| event.to_string().contains("synthetic storage failure")).unwrap();
-        assert!(failure.to_string().contains("loading test project"));
-        let anonymous =
-            exceptions.iter().find(|event| event.to_string().contains("synthetic anonymous failure")).unwrap();
-        assert_ne!(anonymous["distinct_id"], failure["distinct_id"]);
-        assert_eq!(anonymous["properties"]["$process_person_profile"], false);
-        if cfg!(feature = "posthog-product") {
-            let signup = events.iter().find(|event| event["event"] == "user signed up").unwrap();
-            assert_eq!(failure["distinct_id"], signup["distinct_id"]);
         }
     }
     assert_eq!(!spans.is_empty(), cfg!(feature = "posthog-traces"));

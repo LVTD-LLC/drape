@@ -424,13 +424,13 @@ async fn browser_telemetry_obeys_compiled_choices_and_runtime_token(pool: PgPool
         let analytics = app::analytics::Config::parse("phc_test\"><script>", "https://eu.i.posthog.com").unwrap();
         let app = app::build_with_analytics(cfg, pool, analytics).1;
         let (_, _, body) = send(&app, get("/", None)).await;
-        let browser = cfg!(any(feature = "posthog-web", feature = "posthog-errors"));
+        let browser = cfg!(feature = "posthog-web");
         assert_eq!(body.contains("analytics.js"), browser);
         if browser {
             assert!(!body.contains("phc_test\"><script>"));
             assert!(body.contains("https://eu-assets.i.posthog.com/static/array.js"));
             assert!(body.contains(&format!("data-web-analytics=\"{}\"", cfg!(feature = "posthog-web"))));
-            assert!(body.contains(&format!("data-error-tracking=\"{}\"", cfg!(feature = "posthog-errors"))));
+            assert!(!body.contains("data-error-tracking"));
         }
     }
 }

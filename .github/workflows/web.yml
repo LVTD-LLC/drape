@@ -59,7 +59,7 @@ jobs:
       - run: SQLX_OFFLINE=true cargo check --workspace --all-targets --all-features
       - name: Check independent optional capabilities
         run: |
-          for feature in stripe storage sentry-errors sentry-traces sentry-logs sentry-metrics sentry-replay posthog-web posthog-product posthog-errors posthog-logs posthog-traces; do
+          for feature in stripe storage sentry-errors sentry-traces sentry-logs sentry-metrics sentry-replay posthog-web posthog-product posthog-logs posthog-traces; do
             cargo clippy --workspace --all-targets --no-default-features --features "$feature" -- -D warnings
             cargo test --workspace --no-default-features --features "$feature"
             SQLX_OFFLINE=true cargo check --workspace --all-targets --no-default-features --features "$feature"

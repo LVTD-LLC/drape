@@ -8,7 +8,7 @@ order = 4
 
 ## Enable PostHog
 
-PostHog is optional. Your project's selected capabilities are in the default feature list in `app/Cargo.toml`. Add or remove the five features below to change what is collected, then rebuild. PostHog works independently of [Sentry](/docs/sentry).
+PostHog is optional. Your project's selected capabilities are in the default feature list in `app/Cargo.toml`. Add or remove the four features below to change what is collected, then rebuild. PostHog works independently of [Sentry](/docs/sentry).
 
 Configuration examples below use placeholders; provide your own ingestion token to activate collection.
 
@@ -16,7 +16,6 @@ Configuration examples below use placeholders; provide your own ingestion token 
 
 - **Web analytics** (`posthog-web`): browser pageviews, pageleaves, and Core Web Vitals.
 - **Product events** (`posthog-product`): successful sign-up, sign-in, and sign-out events, plus user profiles with UUID, email, and account creation date.
-- **Error tracking** (`posthog-errors`): browser exceptions, server errors, and best-effort panic reporting.
 - **Application logs** (`posthog-logs`): batched structured Rust logs.
 - **Request traces** (`posthog-traces`): sampled HTTP request spans with trace context propagation.
 
@@ -42,10 +41,10 @@ Server telemetry omits passwords, cookies, request bodies, query strings, and ra
 
 ## Change the choice later
 
-Add or remove the five `posthog-*` capabilities listed above in the default features in `app/Cargo.toml`, then rebuild. Removing all five omits the PostHog integration. To try additional capabilities locally:
+Add or remove the four `posthog-*` capabilities listed above in the default features in `app/Cargo.toml`, then rebuild. Removing all four omits the PostHog integration. To try additional capabilities locally:
 
 ```sh
-cargo run --features posthog-web,posthog-errors
+cargo run --features posthog-web,posthog-product
 ```
 
 This adds capabilities to the existing defaults. See the generated README for custom event helpers and local telemetry tests.

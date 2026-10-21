@@ -11,6 +11,6 @@ include_storage = true
 include_sentry = true
 sentry_features = ["sentry-errors", "sentry-traces", "sentry-logs", "sentry-metrics", "sentry-replay"]
 include_posthog = true
-posthog_features = ["posthog-web", "posthog-product", "posthog-errors", "posthog-logs", "posthog-traces"]
+posthog_features = ["posthog-web", "posthog-product", "posthog-logs", "posthog-traces"]
 template_version = "386e5df"
 generated_at = "2026-10-10T22:43:35.563980934Z"
